@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { useEffect } from 'react';
 
-function getInitialTheme(): boolean {
-  if (typeof window === 'undefined') return false;
-  const saved = window.localStorage.getItem('jobale-theme');
-  if (saved === 'dark') return true;
-  if (saved === 'light') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
+/**
+ * ThemeToggle — Dark theme toggle commented out.
+ * Ensures the 'dark' class is removed so the website is always displayed in clean light theme.
+ */
 export default function ThemeToggle() {
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+    }
+  }, []);
+
+  return null;
+
+  /* Dark theme toggle implementation commented out:
   const [isDark, setIsDark] = useState(getInitialTheme);
 
   useEffect(() => {
@@ -29,4 +34,5 @@ export default function ThemeToggle() {
       {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </button>
   );
+  */
 }

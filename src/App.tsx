@@ -18,9 +18,12 @@ function App() {
   const [showIntro, setShowIntro] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
+      if (import.meta.env.DEV) {
+        return true;
+      }
       return sessionStorage.getItem('jobale_intro_seen') !== 'true';
     } catch {
-      return false;
+      return true;
     }
   });
 

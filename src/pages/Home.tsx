@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
   ArrowRight,
   Building2,
@@ -9,7 +8,9 @@ import {
   ShieldCheck,
   ClipboardCheck,
   MessageSquare,
+  Clock,
   DollarSign,
+  CheckCircle2,
   Leaf,
   Factory,
   HeartPulse,
@@ -17,15 +18,18 @@ import {
   Home as HomeIcon,
   Briefcase,
   Globe2,
+  Layers,
+  Ruler,
+  Wrench,
   Quote,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import SEO from '@/components/SEO';
 import CTASection from '@/components/CTASection';
-import BlueprintAnimation from '@/components/BlueprintAnimation';
 import { company, stats } from '@/data/company';
 import { services } from '@/data/services';
 import { projects, projectCategories } from '@/data/projects';
+import { getRelatedProjects } from '@/data/projects';
 
 const heroImage = 'https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080';
 
@@ -86,16 +90,6 @@ const qualityCommitments: { icon: LucideIcon; title: string; description: string
   { icon: Users, title: 'Community Responsibility', description: 'Local employment, skills development, and respect for surrounding communities.' },
 ];
 
-// Framer Motion entrance variants for hero content
-const heroFadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: 0.15 * i, duration: 0.7, ease: [0.22, 1, 0.36, 1] as const },
-  }),
-};
-
 function AnimatedCounter({ value, suffix }: { value: string; suffix: string }) {
   const [displayValue, setDisplayValue] = useState('0');
   const ref = useRef<HTMLSpanElement>(null);
@@ -154,131 +148,50 @@ export default function Home() {
         ogImage={heroImage}
       />
 
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* Section A: Premium Hero — Two-column with Blueprint Anim  */}
-      {/* ═══════════════════════════════════════════════════════════ */}
-      <section
-        id="hero"
-        className="hero-section relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #041D33 0%, #07111E 40%, #0F2137 100%)' }}
-      >
-        {/* Subtle architectural grid background */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(25, 55, 82, 0.25) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(25, 55, 82, 0.25) 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px',
-          }}
-        />
-        {/* Radial vignette glow */}
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_30%_50%,_rgba(8,107,183,0.12)_0%,_transparent_70%)]" />
+      {/* Section A: Hero */}
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src={heroImage}
+            alt="Construction site with tower cranes and buildings under development"
+            className="h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-navy-dark/90 via-brand-navy/75 to-brand-navy/60" />
+        </div>
 
-        <div className="container-page relative py-20 lg:py-28 xl:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 xl:gap-20 items-center min-h-[70vh]">
-
-            {/* Left Column — Company Message */}
-            <div className="relative z-10 order-2 lg:order-1">
-              {/* Eyebrow */}
-              <motion.p
-                className="inline-flex items-center gap-2.5 text-xs font-heading font-semibold uppercase tracking-[0.2em] text-[#2A8AE0] mb-7"
-                variants={heroFadeUp}
-                initial="hidden"
-                animate="visible"
-                custom={0}
-              >
-                <span className="w-8 h-[1.5px] bg-[#086BB7]" />
-                <Factory className="w-3.5 h-3.5" />
-                JOBALE ENGINEERING PLC
-                <span className="text-[#607A91]">|</span>
-                CONSTRUCTION &amp; CIVIL WORKS
-              </motion.p>
-
-              {/* Headline */}
-              <motion.h1
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.2rem] xl:text-display-lg text-white font-heading font-extrabold tracking-tight leading-[1.08] text-balance"
-                variants={heroFadeUp}
-                initial="hidden"
-                animate="visible"
-                custom={1}
-              >
-                Building the Future.
-                <br />
-                <span className="text-[#2A8AE0]">Engineering</span> What Lasts.
-              </motion.h1>
-
-              {/* Supporting copy */}
-              <motion.p
-                className="mt-6 lg:mt-7 text-base sm:text-lg lg:text-xl text-[#B8C8D6] max-w-xl leading-relaxed text-pretty"
-                variants={heroFadeUp}
-                initial="hidden"
-                animate="visible"
-                custom={2}
-              >
-                Delivering building construction, civil infrastructure, and engineering solutions with a commitment to quality, safety, and lasting value.
-              </motion.p>
-
-              {/* CTA Buttons */}
-              <motion.div
-                className="mt-9 lg:mt-10 flex flex-col sm:flex-row items-start gap-4"
-                variants={heroFadeUp}
-                initial="hidden"
-                animate="visible"
-                custom={3}
-              >
-                <Link to="/projects" className="hero-btn-primary group">
-                  Explore Our Projects
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
-                </Link>
-                <Link to="/contact" className="hero-btn-secondary group">
-                  Discuss Your Project
-                  <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
-                </Link>
-              </motion.div>
-
-              {/* Slogan */}
-              <motion.div
-                className="mt-10 lg:mt-12 flex items-center gap-3"
-                variants={heroFadeUp}
-                initial="hidden"
-                animate="visible"
-                custom={4}
-              >
-                <span className="w-10 h-[1px] bg-[#607A91]" />
-                <p className="text-sm font-heading font-medium tracking-wide text-[#607A91] italic">
-                  "{company.slogan}"
-                </p>
-              </motion.div>
+        <div className="container-page relative py-20 lg:py-32">
+          <div className="max-w-3xl">
+            <p className="section-label text-brand-blue-light mb-6 animate-fade-in-down">
+              <Factory className="w-4 h-4" />
+              JOBALE ENGINEERING PLC | CONSTRUCTION & CIVIL WORKS
+            </p>
+            <h1 className="text-4xl sm:text-5xl lg:text-display-lg text-white font-heading font-extrabold tracking-tight leading-[1.05] text-balance animate-fade-in-up">
+              Building with Precision.
+              <br />
+              Delivering with Confidence.
+            </h1>
+            <p className="mt-6 text-lg lg:text-xl text-surface-steel max-w-2xl leading-relaxed text-pretty animate-fade-in-up">
+              From building construction to civil infrastructure, Jobale Engineering delivers practical engineering solutions grounded in quality, safety, reliability, and lasting value.
+            </p>
+            <div className="mt-10 flex flex-col sm:flex-row items-start gap-4 animate-fade-in-up">
+              <Link to="/projects" className="btn-primary group">
+                Explore Our Projects
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+              <Link to="/contact" className="btn-secondary">
+                Discuss Your Project
+              </Link>
             </div>
-
-            {/* Right Column — Continuous Blueprint Animation */}
-            <motion.div
-              className="relative order-1 lg:order-2 flex items-center justify-center"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1.0, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {/* Ambient glow behind the blueprint */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(8,107,183,0.15)_0%,_transparent_65%)] pointer-events-none" />
-
-              {/* Blueprint container */}
-              <div className="relative w-full max-w-[560px] lg:max-w-none aspect-[800/500]">
-                <BlueprintAnimation />
-              </div>
-
-              {/* Technical badge — bottom-right of animation */}
-              <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 hidden sm:flex items-center gap-2 text-[10px] font-mono text-[#607A91]/60">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#086BB7] animate-pulse" />
-                <span>STRUCTURAL CAD • SCALE 1:100</span>
-              </div>
-            </motion.div>
+            <p className="mt-8 text-sm text-surface-steel/60 font-heading italic animate-fade-in">
+              "{company.slogan}"
+            </p>
           </div>
         </div>
 
-        {/* Bottom gradient transition to next section */}
-        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-surface-offwhite to-transparent" />
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-surface-offwhite to-transparent" />
       </section>
 
       {/* Section B: Company Introduction */}
@@ -360,7 +273,6 @@ export default function Home() {
             ))}
           </div>
           <p className="mt-10 text-center text-xs text-surface-steel/50 max-w-2xl mx-auto">
-            Figures sourced from the company profile and require client verification before publication.
           </p>
         </div>
       </section>
@@ -452,11 +364,10 @@ export default function Home() {
               <button
                 key={cat}
                 onClick={() => setActiveFilter(cat)}
-                className={`px-4 py-2 rounded-lg text-sm font-heading font-semibold transition-all ${
-                  activeFilter === cat
-                    ? 'bg-brand-blue text-white shadow-md'
-                    : 'bg-white text-ink hover:bg-surface-steel/40 border border-surface-steel/50'
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-heading font-semibold transition-all ${activeFilter === cat
+                  ? 'bg-brand-blue text-white shadow-md'
+                  : 'bg-white text-ink hover:bg-surface-steel/40 border border-surface-steel/50'
+                  }`}
               >
                 {cat}
               </button>

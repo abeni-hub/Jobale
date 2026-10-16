@@ -1,16 +1,36 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
+export interface BlueprintAnimationProps {
+  /** If true, loops endlessly with yoyo (default: true) */
+  loop?: boolean;
+  /** Callback fired when the initial architectural drawing reaches 100% completion */
+  onComplete?: () => void;
+  /** Prefix for SVG defs to prevent ID collisions (default: 'bp') */
+  idPrefix?: string;
+  /** Optional container className */
+  className?: string;
+  /** SVG aspect ratio preservation (default: 'xMidYMid meet') */
+  preserveAspectRatio?: string;
+}
+
 /**
- * BlueprintAnimation — Continuous architectural SVG animation.
+ * BlueprintAnimation — Architectural CAD SVG drawing animation.
  *
- * Lifecycle is fully independent of the intro overlay.
- * Uses gsap.context() for cleanup, repeat: -1 for infinite looping,
- * and yoyo: true for seamless visual transitions between iterations.
+ * Can run either in:
+ * - Loop mode (default): for continuous ambient background motion in the hero.
+ * - Single-draw mode (loop: false): for the full-screen intro sequence, firing
+ *   onComplete once the drawing finishes to smoothly transition to the hero.
  *
- * Respects prefers-reduced-motion by showing a static blueprint.
+ * Uses gsap.context() for cleanup and respects prefers-reduced-motion.
  */
-export default function BlueprintAnimation() {
+export default function BlueprintAnimation({
+  loop = true,
+  onComplete,
+  idPrefix = 'bp',
+  className = '',
+  preserveAspectRatio = 'xMidYMid meet',
+}: BlueprintAnimationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ctxRef = useRef<gsap.Context | null>(null);
 
@@ -37,6 +57,11 @@ export default function BlueprintAnimation() {
       allFade.forEach((el) => {
         (el as SVGElement).style.opacity = '1';
       });
+
+      if (!loop) {
+        const timer = setTimeout(() => onComplete?.(), 400);
+        return () => clearTimeout(timer);
+      }
       return;
     }
 
@@ -62,121 +87,137 @@ export default function BlueprintAnimation() {
       gsap.set('.bp-pulse', { opacity: 0.3 });
 
       // ───────────────────────────────────────────────────────
-      // MASTER TIMELINE — Infinite loop with yoyo for seamless reset
+      // MASTER TIMELINE — Infinite loop (hero) or single-run (intro)
       // ───────────────────────────────────────────────────────
       const master = gsap.timeline({
-        repeat: -1,
-        yoyo: true,
+        repeat: loop ? -1 : 0,
+        yoyo: loop,
         repeatDelay: 0.8,
         defaults: { ease: 'power2.out' },
+        onComplete: () => {
+          if (!loop) {
+            onComplete?.();
+          }
+        },
       });
 
       // PHASE A — Foundation line draws left to right
       master
         .to('.bp-foundation', {
           strokeDashoffset: 0,
-          duration: 1.0,
+          duration: 0.95,
           ease: 'power2.inOut',
         })
         .to('.bp-hatch', {
           opacity: 0.5,
-          duration: 0.5,
-          stagger: 0.02,
+          duration: 0.45,
+          stagger: 0.018,
           ease: 'power1.out',
-        }, '-=0.5')
+        }, '-=0.45')
         .to('.bp-axis-marker', {
           opacity: 1,
-          duration: 0.35,
-          stagger: 0.05,
-        }, '-=0.3');
+          duration: 0.3,
+          stagger: 0.04,
+        }, '-=0.25');
 
       // PHASE B — Building outlines trace progressively
       master
         .to('.bp-outline-center', {
           strokeDashoffset: 0,
-          duration: 1.2,
+          duration: 1.1,
           ease: 'power2.out',
-        }, '-=0.2')
+        }, '-=0.15')
         .to('.bp-outline-left', {
           strokeDashoffset: 0,
-          duration: 1.0,
-          stagger: 0.08,
+          duration: 0.9,
+          stagger: 0.07,
           ease: 'power2.out',
-        }, '-=0.7')
+        }, '-=0.65')
         .to('.bp-outline-right', {
           strokeDashoffset: 0,
-          duration: 0.9,
-          stagger: 0.08,
+          duration: 0.85,
+          stagger: 0.07,
           ease: 'power2.out',
-        }, '-=0.7');
+        }, '-=0.65');
 
       // PHASE C — Structural beams rise
       master
         .to('.bp-beam', {
           scaleY: 1,
-          duration: 0.8,
-          stagger: 0.04,
+          duration: 0.75,
+          stagger: 0.035,
           ease: 'power2.out',
-        }, '-=0.5');
+        }, '-=0.45');
 
       // PHASE D — Floor lines and window grids appear
       master
         .to('.bp-floor', {
           strokeDashoffset: 0,
-          duration: 0.7,
-          stagger: 0.03,
+          duration: 0.65,
+          stagger: 0.025,
           ease: 'power1.out',
-        }, '-=0.5')
+        }, '-=0.45')
         .to('.bp-fade', {
           opacity: 0.7,
-          duration: 0.6,
-          stagger: 0.03,
+          duration: 0.55,
+          stagger: 0.025,
           ease: 'power1.out',
-        }, '-=0.4');
+        }, '-=0.35');
 
       // PHASE E — Blueprint pulse: subtle luminous breath
       master
         .to('.bp-pulse', {
-          opacity: 0.7,
-          duration: 1.2,
+          opacity: 0.75,
+          duration: 0.9,
           ease: 'power1.inOut',
-        }, '-=0.3');
+        }, '-=0.25');
 
-      // Hold at fully drawn state before yoyo reverses
-      master.to({}, { duration: 1.5 });
+      // Hold at fully drawn state before repeating or completing
+      master.to({}, {
+        duration: loop ? 1.5 : 0.7,
+        onComplete: () => {
+          if (!loop) {
+            onComplete?.();
+          }
+        },
+      });
     }, containerRef);
 
     return () => {
       ctxRef.current?.revert();
     };
-  }, []);
+  }, [loop, onComplete]);
+
+  const glowId = `${idPrefix}-glow`;
+  const gridId = `${idPrefix}-grid`;
+  const gradientId = `${idPrefix}-gradient`;
 
   return (
-    <div ref={containerRef} className="w-full h-full" aria-hidden="true">
+    <div ref={containerRef} className={`w-full h-full ${className}`} aria-hidden="true">
       <svg
         viewBox="0 0 800 500"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full overflow-visible"
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio={preserveAspectRatio}
       >
         <defs>
-          <filter id="bp-glow" x="-10%" y="-10%" width="120%" height="120%">
+          <filter id={glowId} x="-10%" y="-10%" width="120%" height="120%">
             <feGaussianBlur stdDeviation="1.8" result="glow" />
             <feComposite in="SourceGraphic" in2="glow" operator="over" />
           </filter>
-          <pattern id="bp-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <pattern id={gridId} width="40" height="40" patternUnits="userSpaceOnUse">
             <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#193752" strokeWidth="0.4" strokeOpacity="0.35" />
           </pattern>
-          <linearGradient id="bp-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#086BB7" stopOpacity="0.15" />
             <stop offset="100%" stopColor="#07111E" stopOpacity="0.05" />
           </linearGradient>
         </defs>
 
         {/* Background technical grid */}
-        <rect x="40" y="30" width="720" height="400" fill="url(#bp-grid)" opacity="0.4" />
-        <rect x="40" y="30" width="720" height="400" fill="url(#bp-gradient)" />
+        <rect x="40" y="30" width="720" height="400" fill={`url(#${gridId})`} opacity="0.4" />
+        <rect x="40" y="30" width="720" height="400" fill={`url(#${gradientId})`} />
 
         {/* Technical registration crosshairs */}
         <g className="bp-fade" stroke="#607A91" strokeWidth="0.8" opacity="0">
@@ -206,7 +247,7 @@ export default function BlueprintAnimation() {
           x1="80" y1="390" x2="720" y2="390"
           stroke="#2A8AE0" strokeWidth="2.5" strokeLinecap="round"
           className="bp-foundation bp-draw"
-          filter="url(#bp-glow)"
+          filter={`url(#${glowId})`}
         />
         <line
           x1="80" y1="394" x2="720" y2="394"
@@ -248,48 +289,51 @@ export default function BlueprintAnimation() {
         {/* BUILDING 1 — LEFT (Medium height)                       */}
         {/* x=140–280, top=170                                      */}
         {/* ═══════════════════════════════════════════════════════ */}
-        <g id="bp-building-left">
-          {/* Roof parapet */}
-          <path
-            d="M 168 170 L 168 152 L 252 152 L 252 170"
-            stroke="#607A91" strokeWidth="1.2"
-            className="bp-outline-left bp-draw"
-          />
-          {/* Main outline */}
+        <g id={`${idPrefix}-building-left`}>
+          {/* Main outline polygon */}
           <polygon
             points="140,390 140,170 280,170 280,390"
-            fill="rgba(15, 33, 55, 0.3)"
-            stroke="#2A8AE0" strokeWidth="1.8" strokeLinejoin="round"
+            fill="rgba(15, 33, 55, 0.45)"
+            stroke="#2A8AE0" strokeWidth="1.8"
             className="bp-outline-left bp-draw"
           />
-          {/* Diagonal bracing */}
-          <line x1="140" y1="390" x2="280" y2="280" stroke="#193752" strokeWidth="0.7" strokeDasharray="3 3" className="bp-fade" opacity="0" />
-          <line x1="280" y1="390" x2="140" y2="280" stroke="#193752" strokeWidth="0.7" strokeDasharray="3 3" className="bp-fade" opacity="0" />
-
-          {/* Floor slabs */}
-          {[210, 250, 290, 330, 360].map((y, idx) => (
+          {/* Stepped parapet top */}
+          <polyline
+            points="140,170 140,158 200,158 200,170"
+            stroke="#2A8AE0" strokeWidth="1.4"
+            className="bp-outline-left bp-draw"
+          />
+          {/* Horizontal floor slabs */}
+          {[205, 245, 285, 325, 360].map((y) => (
             <line
-              key={`fl-l-${idx}`}
+              key={`fl-l-${y}`}
               x1="140" y1={y} x2="280" y2={y}
-              stroke="#607A91" strokeWidth="1"
+              stroke="#2A8AE0" strokeWidth="1.0"
               className="bp-floor bp-draw"
             />
           ))}
-          {/* Vertical beams */}
-          {[168, 196, 224, 252].map((x, idx) => (
+          {/* Vertical structural columns */}
+          {[170, 205, 245].map((x) => (
             <line
-              key={`bm-l-${idx}`}
+              key={`bm-l-${x}`}
               x1={x} y1="170" x2={x} y2="390"
               stroke="#086BB7" strokeWidth="1.2"
               className="bp-beam"
             />
           ))}
-          {/* Window grids (subtle) */}
-          {[215, 255, 295, 335].map((y) =>
-            [152, 180, 208, 236].map((x) => (
+          {/* Cross bracing in ground bays */}
+          <g className="bp-fade" stroke="#086BB7" strokeWidth="0.6" strokeDasharray="2 2" opacity="0">
+            <line x1="140" y1="360" x2="170" y2="390" />
+            <line x1="170" y1="360" x2="140" y2="390" />
+            <line x1="245" y1="360" x2="280" y2="390" />
+            <line x1="280" y1="360" x2="245" y2="390" />
+          </g>
+          {/* Window pattern (fades in) */}
+          {[213, 253, 293, 333].map((y) =>
+            [148, 178, 213, 253].map((x) => (
               <rect
                 key={`w-l-${x}-${y}`}
-                x={x} y={y} width="12" height="16"
+                x={x} y={y} width="16" height="22"
                 stroke="#607A91" strokeWidth="0.4" fill="none"
                 className="bp-fade" opacity="0"
               />
@@ -298,103 +342,126 @@ export default function BlueprintAnimation() {
         </g>
 
         {/* ═══════════════════════════════════════════════════════ */}
-        {/* BUILDING 2 — CENTER (Tallest)                           */}
-        {/* x=310–490, top=65                                       */}
+        {/* BUILDING 2 — CENTER TOWER (Tallest, Signature Structure)*/}
+        {/* x=305–495, top=70                                       */}
         {/* ═══════════════════════════════════════════════════════ */}
-        <g id="bp-building-center">
-          {/* Architectural spire */}
-          <line
-            x1="400" y1="28" x2="400" y2="65"
+        <g id={`${idPrefix}-building-center`}>
+          {/* Main tower outline */}
+          <polygon
+            points="305,390 305,70 495,70 495,390"
+            fill="rgba(15, 33, 55, 0.6)"
+            stroke="#FFFFFF" strokeWidth="2.0"
+            className="bp-outline-center bp-draw"
+            filter={`url(#${glowId})`}
+          />
+          {/* Crown spire */}
+          <polyline
+            points="340,70 340,40 400,20 460,40 460,70"
             stroke="#2A8AE0" strokeWidth="1.8"
             className="bp-outline-center bp-draw"
-            filter="url(#bp-glow)"
           />
-          <circle cx="400" cy="28" r="2.5" fill="#2A8AE0" className="bp-fade" opacity="0" />
-          {/* Crown */}
-          <path
-            d="M 340 65 L 368 42 L 432 42 L 460 65"
-            stroke="#607A91" strokeWidth="1.2"
-            fill="rgba(15, 33, 55, 0.4)"
+          {/* Spire antenna */}
+          <line
+            x1="400" y1="20" x2="400" y2="-5"
+            stroke="#FFFFFF" strokeWidth="1.5"
             className="bp-outline-center bp-draw"
+            filter={`url(#${glowId})`}
           />
-          {/* Main high-rise outline */}
-          <polygon
-            points="310,390 310,65 490,65 490,390"
-            fill="rgba(15, 33, 55, 0.45)"
-            stroke="#FFFFFF" strokeWidth="2" strokeLinejoin="round"
-            className="bp-outline-center bp-draw"
-            filter="url(#bp-glow)"
-          />
-          {/* Core shear wall */}
-          <rect
-            x="387" y="65" width="26" height="325"
-            fill="rgba(8, 107, 183, 0.08)"
-            stroke="#607A91" strokeWidth="0.6" strokeDasharray="2 2"
-            className="bp-beam"
-          />
-          {/* Floor slabs */}
-          {[100, 135, 170, 205, 240, 275, 310, 345, 370].map((y, idx) => (
+          <circle cx="400" cy="-5" r="2.5" fill="#2A8AE0" className="bp-fade" opacity="0" />
+
+          {/* Horizontal floor plates */}
+          {[105, 140, 175, 210, 245, 280, 315, 350].map((y) => (
             <line
-              key={`fl-c-${idx}`}
-              x1="310" y1={y} x2="490" y2={y}
-              stroke="#607A91" strokeWidth="1"
+              key={`fl-c-${y}`}
+              x1="305" y1={y} x2="495" y2={y}
+              stroke="#2A8AE0" strokeWidth="1.2"
               className="bp-floor bp-draw"
             />
           ))}
-          {/* Vertical beams */}
-          {[335, 360, 387, 413, 440, 465].map((x, idx) => (
+
+          {/* Heavy vertical structural core columns */}
+          {[340, 375, 425, 460].map((x) => (
             <line
-              key={`bm-c-${idx}`}
-              x1={x} y1="65" x2={x} y2="390"
-              stroke="#2A8AE0" strokeWidth="1.5"
+              key={`bm-c-${x}`}
+              x1={x} y1="70" x2={x} y2="390"
+              stroke="#086BB7" strokeWidth="1.8"
               className="bp-beam"
             />
           ))}
-          {/* X-bracing */}
-          <g stroke="#193752" strokeWidth="0.7" strokeDasharray="2 2" className="bp-fade" opacity="0">
-            <line x1="310" y1="240" x2="387" y2="170" />
-            <line x1="387" y1="240" x2="310" y2="170" />
-            <line x1="413" y1="240" x2="490" y2="170" />
-            <line x1="490" y1="240" x2="413" y2="170" />
+
+          {/* Center core shear wall */}
+          <line
+            x1="400" y1="70" x2="400" y2="390"
+            stroke="#FFFFFF" strokeWidth="1.0" strokeDasharray="4 2"
+            className="bp-floor bp-draw"
+            opacity="0.8"
+          />
+
+          {/* K-Truss structural cross bracing */}
+          <g className="bp-fade" stroke="#2A8AE0" strokeWidth="0.8" opacity="0">
+            <line x1="305" y1="280" x2="400" y2="315" />
+            <line x1="495" y1="280" x2="400" y2="315" />
+            <line x1="305" y1="350" x2="400" y2="315" />
+            <line x1="495" y1="350" x2="400" y2="315" />
+            <line x1="305" y1="210" x2="400" y2="245" />
+            <line x1="495" y1="210" x2="400" y2="245" />
+            <line x1="305" y1="280" x2="400" y2="245" />
+            <line x1="495" y1="280" x2="400" y2="245" />
           </g>
-          {/* Window grids (subtle) */}
-          {[108, 143, 178, 213, 248, 283, 318].map((y) =>
-            [320, 345, 370, 420, 445, 470].map((x) => (
+
+          {/* Curtain wall grid pattern */}
+          {[80, 115, 150, 185, 220, 255, 290, 325, 360].map((y) =>
+            [315, 345, 380, 420, 450, 475].map((x) => (
               <rect
                 key={`w-c-${x}-${y}`}
-                x={x} y={y} width="10" height="14"
-                stroke="#607A91" strokeWidth="0.3" fill="none"
+                x={x} y={y} width="18" height="18"
+                stroke="#607A91" strokeWidth="0.35" fill="none"
                 className="bp-fade" opacity="0"
               />
             ))
           )}
+
+          {/* Mechanical floor indicator (level 5) */}
+          <g className="bp-fade" opacity="0">
+            <rect x="306" y="211" width="188" height="33" fill="#086BB7" fillOpacity="0.12" />
+            <text x="400" y="230" fill="#2A8AE0" fontSize="7" fontFamily="monospace" textAnchor="middle" letterSpacing="2">
+              MECH PLANT LEVEL
+            </text>
+          </g>
         </g>
 
         {/* ═══════════════════════════════════════════════════════ */}
-        {/* BUILDING 3 — RIGHT (Shorter)                            */}
-        {/* x=510–650, top=230                                      */}
+        {/* BUILDING 3 — RIGHT (Tiered Modern Wing)                 */}
+        {/* x=510–660, tiered heights 190 and 240                   */}
         {/* ═══════════════════════════════════════════════════════ */}
-        <g id="bp-building-right">
-          {/* Cantilever canopy */}
-          <path
-            d="M 496 230 L 664 230 L 650 244 L 510 244 Z"
-            stroke="#607A91" strokeWidth="1.2"
-            fill="rgba(15, 33, 55, 0.5)"
-            className="bp-outline-right bp-draw"
-          />
-          {/* Main outline */}
+        <g id={`${idPrefix}-building-right`}>
+          {/* Tier 1 (taller part, x=510-600) */}
           <polygon
-            points="510,390 510,244 650,244 650,390"
-            fill="rgba(15, 33, 55, 0.3)"
-            stroke="#2A8AE0" strokeWidth="1.8" strokeLinejoin="round"
+            points="510,390 510,190 600,190 600,390"
+            fill="rgba(15, 33, 55, 0.45)"
+            stroke="#2A8AE0" strokeWidth="1.8"
             className="bp-outline-right bp-draw"
           />
-          {/* Floor slabs */}
-          {[275, 310, 345, 365].map((y, idx) => (
+          {/* Tier 2 (lower wing, x=600-660) */}
+          <polygon
+            points="600,390 600,240 660,240 660,390"
+            fill="rgba(15, 33, 55, 0.4)"
+            stroke="#2A8AE0" strokeWidth="1.6"
+            className="bp-outline-right bp-draw"
+          />
+          {/* Angled architectural roof cantilever */}
+          <polyline
+            points="495,190 610,175 610,190"
+            stroke="#2A8AE0" strokeWidth="1.4"
+            className="bp-outline-right bp-draw"
+            filter={`url(#${glowId})`}
+          />
+          {/* Horizontal floor plates */}
+          {[220, 255, 290, 325, 360].map((y) => (
             <line
-              key={`fl-r-${idx}`}
-              x1="510" y1={y} x2="650" y2={y}
-              stroke="#607A91" strokeWidth="1"
+              key={`fl-r-${y}`}
+              x1="510" y1={y} x2={y > 240 ? '660' : '600'} y2={y}
+              stroke="#2A8AE0" strokeWidth="1.0"
               className="bp-floor bp-draw"
             />
           ))}
