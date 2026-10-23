@@ -4,10 +4,10 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X, Phone } from 'lucide-react';
 import Logo from './Logo';
-import ThemeToggle from './ThemeToggle';
 import { company } from '@/data/company';
+import { useCms } from '@/context/CmsContext';
 
-const navLinks = [
+const defaultNavLinks = [
   { label: 'Home', to: '/' },
   { label: 'About', to: '/about' },
   { label: 'Services', to: '/services' },
@@ -17,9 +17,20 @@ const navLinks = [
 ];
 
 export default function Header() {
+  const { data, slogan, companyName, phone, email, city, region, country } = useCms();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+
+  // Dynamic CMS navigation items or fallback
+  const navLinks =
+    data?.navigation && data.navigation.length > 0
+      ? data.navigation
+          .filter((item) => item.is_visible)
+          .map((item) => ({ label: item.label, to: item.url }))
+      : defaultNavLinks;
+
+  const logoSrc = data?.site_settings?.logo || null;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -60,17 +71,17 @@ export default function Header() {
         >
           <div className="container-page flex items-center justify-between py-2 text-xs">
             <span className="font-heading font-medium tracking-wide hidden sm:inline">
-              {company.slogan}
+              {slogan}
             </span>
             <span className="font-heading font-medium tracking-wide sm:hidden truncate max-w-[190px]">
-              {company.name}
+              {companyName}
             </span>
             <a
-              href={`tel:${company.phone.replace(/\s/g, '')}`}
+              href={`tel:${phone.replace(/\s/g, '')}`}
               className="flex items-center gap-1.5 hover:text-white transition-colors shrink-0"
             >
               <Phone className="w-3.5 h-3.5 text-brand-blue-light" />
-              <span>{company.phone}</span>
+              <span>{phone}</span>
             </a>
           </div>
         </div>
@@ -81,9 +92,9 @@ export default function Header() {
             <Link
               to="/"
               className="flex items-center shrink-0"
-              aria-label="Jobale Engineering PLC — Home"
+              aria-label={`${companyName} — Home`}
             >
-              <Logo className="h-12 w-[150px] sm:w-[175px] rounded bg-white" />
+              <Logo src={logoSrc} className="h-12 w-[150px] sm:w-[175px] rounded bg-white" />
             </Link>
 
             {/* Desktop nav */}
@@ -108,7 +119,6 @@ export default function Header() {
 
             {/* CTA + mobile toggle */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* <ThemeToggle /> */}
               <Link to="/contact" className="hidden sm:inline-flex btn-primary !py-2.5 !px-5">
                 Discuss a Project
               </Link>
@@ -127,7 +137,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile menu Portal — mounted to document.body to prevent backdrop-blur containing block traps */}
+      {/* Mobile menu Portal */}
       {typeof document !== 'undefined' &&
         createPortal(
           <AnimatePresence>
@@ -157,7 +167,7 @@ export default function Header() {
                   <div>
                     {/* Drawer Header */}
                     <div className="flex items-center justify-between p-5 border-b border-surface-steel dark:border-brand-navy-light">
-                      <Logo className="h-10 w-[140px] rounded bg-white" />
+                      <Logo src={logoSrc} className="h-10 w-[140px] rounded bg-white" />
                       <button
                         type="button"
                         onClick={() => setIsOpen(false)}
@@ -170,15 +180,6 @@ export default function Header() {
 
                     {/* Nav Items */}
                     <div className="flex flex-col p-4 gap-1">
-                      {/* Dark theme toggle commented out
-                      <div className="flex items-center justify-between px-4 py-2.5 mb-2 rounded-lg bg-surface-offwhite dark:bg-brand-navy-light">
-                        <span className="text-sm font-heading font-semibold text-brand-navy dark:text-white">
-                          Appearance
-                        </span>
-                        <ThemeToggle />
-                      </div>
-                      */}
-
                       {navLinks.map((link) => (
                         <NavLink
                           key={link.to}
@@ -210,20 +211,20 @@ export default function Header() {
                   {/* Drawer Footer */}
                   <div className="p-5 border-t border-surface-steel dark:border-brand-navy-light space-y-3 bg-surface-offwhite/50 dark:bg-brand-navy-light/30">
                     <a
-                      href={`tel:${company.phone.replace(/\s/g, '')}`}
+                      href={`tel:${phone.replace(/\s/g, '')}`}
                       className="flex items-center gap-2 text-sm text-ink dark:text-surface-steel hover:text-brand-blue transition-colors"
                     >
                       <Phone className="w-4 h-4 text-brand-blue" />
-                      {company.phone}
+                      {phone}
                     </a>
                     <a
-                      href={`mailto:${company.email}`}
+                      href={`mailto:${email}`}
                       className="block text-sm text-ink dark:text-surface-steel hover:text-brand-blue transition-colors"
                     >
-                      {company.email}
+                      {email}
                     </a>
                     <p className="text-xs text-ink-light dark:text-surface-steel-dark">
-                      {company.city}, {company.region}, {company.country}
+                      {city}, {region}, {country}
                     </p>
                   </div>
                 </motion.nav>

@@ -621,14 +621,54 @@ class Command(BaseCommand):
             'Responsible sourcing of materials. Site restoration upon project completion.'
         )
         quality.commitments = [
-            {'icon': 'ClipboardCheck', 'title': 'Quality Assurance',
-             'description': 'Stage-by-stage inspections, material checks, testing, and corrective actions.'},
-            {'icon': 'HardHat', 'title': 'Health & Safety',
-             'description': 'Risk assessments, PPE, safety briefings, and emergency procedures on every site.'},
-            {'icon': 'Leaf', 'title': 'Environmental Responsibility',
-             'description': 'Responsible waste management, dust and noise control, and pollution prevention.'},
-            {'icon': 'Users', 'title': 'Community Responsibility',
-             'description': 'Local employment, skills development, and respect for surrounding communities.'},
+            {
+                'icon': 'ClipboardCheck',
+                'title': 'Quality Assurance',
+                'description': (
+                    'Compliance with project drawings, specifications, and applicable standards\n'
+                    'Material checks on delivery and before use\n'
+                    'Stage-by-stage inspections throughout construction\n'
+                    'Testing of materials, installations, and completed works\n'
+                    'Corrective actions when inspections identify non-conformances\n'
+                    'Final handover inspections before project sign-off'
+                ),
+            },
+            {
+                'icon': 'HardHat',
+                'title': 'Health & Safety',
+                'description': (
+                    'Risk assessments before commencing site activities\n'
+                    'Personal protective equipment (PPE) provided and enforced\n'
+                    'Worker training and site safety briefings\n'
+                    'Safe site operations and signage\n'
+                    'Emergency procedures and first-aid readiness\n'
+                    'Ongoing safety monitoring throughout the project'
+                ),
+            },
+            {
+                'icon': 'Leaf',
+                'title': 'Environmental Responsibility',
+                'description': (
+                    'Responsible waste disposal and segregation\n'
+                    'Dust and noise control measures\n'
+                    'Pollution prevention on and around sites\n'
+                    'Efficient use of water and energy\n'
+                    'Responsible sourcing of materials\n'
+                    'Site restoration upon project completion'
+                ),
+            },
+            {
+                'icon': 'Users',
+                'title': 'Community Responsibility',
+                'description': (
+                    'Local employment opportunities on projects\n'
+                    'Skills development and on-site training\n'
+                    'Support for local suppliers and service providers\n'
+                    'Respect for local communities and customs\n'
+                    'Fair labour practices\n'
+                    'Minimising disruption to surrounding areas'
+                ),
+            },
         ]
         quality.save()
 

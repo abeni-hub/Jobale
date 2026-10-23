@@ -61,16 +61,51 @@ def string_list_field(**kwargs):
     return field
 
 
+from urllib.parse import urlparse
+
+
+class FlexibleMediaField(serializers.FileField):
+    """
+    Serializer field for media / image fields that accepts:
+    - An uploaded binary file (UploadedFile).
+    - A string path or URL (e.g. '/media/projects/...', 'projects/...', or full URL).
+    - None or empty string to clear the field.
+    """
+
+    def to_internal_value(self, data):
+        if data is None or data == '' or data is False:
+            return None if self.allow_null else ''
+        if isinstance(data, str):
+            val = data.strip()
+            if not val:
+                return None if self.allow_null else ''
+            if val.startswith(('http://', 'https://')):
+                val = urlparse(val).path
+            if val.startswith('/media/'):
+                val = val[len('/media/'):]
+            elif val.startswith('media/'):
+                val = val[len('media/'):]
+            return val
+        return super().to_internal_value(data)
+
+    def to_representation(self, value):
+        if not value:
+            return None
+        if isinstance(value, str):
+            if value.startswith(('http://', 'https://', '/')):
+                return value
+            return f'/media/{value}'
+        return super().to_representation(value)
+
+
 class MediaAssetLinkMixin:
     """
-    Adds support for reusing assets already present in the media library.
+    Adds support for reusing assets already present in the media library
+    and accepting either binary file uploads or existing media URLs/paths.
 
     The client sends ``media_asset_ids: {"<field_name>": <asset id>}``. The
     referenced asset's file is linked to the target field (no duplicate file is
     written to disk).
-
-    The field is registered in ``__init__`` because fields declared on a plain
-    mixin are not picked up by DRF's ``SerializerMetaclass``.
     """
 
     media_fields: tuple = ()
@@ -83,6 +118,13 @@ class MediaAssetLinkMixin:
             required=False,
             help_text='Map of model field name -> media library asset id.',
         )
+        for field_name in self.media_fields:
+            if field_name in self.fields:
+                orig_field = self.fields[field_name]
+                self.fields[field_name] = FlexibleMediaField(
+                    allow_null=getattr(orig_field, 'allow_null', True),
+                    required=False,
+                )
 
     def _apply_media_links(self, instance, links):
         if not links:

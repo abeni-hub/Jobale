@@ -4,14 +4,56 @@ import { Search, ArrowRight, X, FolderOpen } from 'lucide-react';
 import SEO from '@/components/SEO';
 import PageHeader from '@/components/PageHeader';
 import CTASection from '@/components/CTASection';
-import { projects, projectCategories } from '@/data/projects';
+import { projects as defaultProjects, projectCategories as defaultCategories } from '@/data/projects';
+import { useCms } from '@/context/CmsContext';
+import { mediaUrl } from '@/lib/api';
+
+interface CardProject {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  summary: string;
+  location: string;
+  client: string;
+  status: string;
+  image: string;
+}
 
 export default function Projects() {
+  const { data, companyName } = useCms();
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const filteredProjects = useMemo(() => {
-    let result = projects;
+  const projectsList: CardProject[] = useMemo(() => {
+    if (data?.projects && data.projects.length > 0) {
+      return data.projects.map((p) => ({
+        id: String(p.id),
+        name: p.name,
+        slug: p.slug,
+        category: p.category_name || p.resolved_category || 'Building Construction',
+        summary: p.summary || p.overview || '',
+        location: p.location || '',
+        client: p.client || '',
+        status: p.project_status_display || p.project_status || 'Completed',
+        image: mediaUrl(p.image) || 'https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=600&h=400',
+      }));
+    }
+    return defaultProjects.map((p) => ({
+      id: String(p.id),
+      name: p.name,
+      slug: p.slug,
+      category: p.category,
+      summary: p.summary,
+      location: p.location || '',
+      client: p.client || '',
+      status: p.status,
+      image: mediaUrl(p.image) || 'https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=600&h=400',
+    }));
+  }, [data?.projects]);
+
+  const filteredProjects: CardProject[] = useMemo(() => {
+    let result = projectsList;
     if (activeFilter !== 'All') {
       result = result.filter((p) => p.category === activeFilter);
     }
@@ -26,16 +68,21 @@ export default function Projects() {
       );
     }
     return result;
-  }, [activeFilter, searchQuery]);
+  }, [projectsList, activeFilter, searchQuery]);
 
-  const availableFilters = projectCategories.filter(
-    (cat) => cat === 'All' || projects.some((p) => p.category === cat)
-  );
+  const availableFilters = useMemo(() => {
+    const cats = new Set<string>();
+    cats.add('All');
+    projectsList.forEach((p) => {
+      if (p.category) cats.add(p.category);
+    });
+    return Array.from(cats);
+  }, [projectsList]);
 
   return (
     <>
       <SEO
-        title="Projects | Jobale Engineering PLC"
+        title={`Projects | ${companyName}`}
         description="Explore our portfolio of construction and civil engineering projects — building construction, civil works, water supply and sanitation, and rehabilitation across Ethiopia."
         ogImage="https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"
       />
@@ -112,6 +159,9 @@ export default function Projects() {
                       alt={project.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=600&h=400';
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/70 via-transparent to-transparent" />
                     <span className="absolute top-4 left-4 px-3 py-1.5 rounded-md text-xs font-heading font-semibold bg-white/95 text-brand-navy">

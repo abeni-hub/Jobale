@@ -12,22 +12,65 @@ import {
 import SEO from '@/components/SEO';
 import PageHeader from '@/components/PageHeader';
 import CTASection from '@/components/CTASection';
-import { getProjectBySlug, getRelatedProjects } from '@/data/projects';
-import { services } from '@/data/services';
+import { getProjectBySlug, getRelatedProjects, projects as defaultProjects } from '@/data/projects';
+import { services as defaultServices } from '@/data/services';
+import { useCms } from '@/context/CmsContext';
+import { mediaUrl } from '@/lib/api';
 import NotFound from './NotFound';
 
 export default function ProjectDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const project = slug ? getProjectBySlug(slug) : undefined;
+  const { data, companyName } = useCms();
 
-  if (!project) return <NotFound />;
+  const cmsProject = data?.projects?.find((p) => p.slug === slug);
+  const staticProject = slug ? getProjectBySlug(slug) : undefined;
 
-  const relatedProjects = getRelatedProjects(project);
+  if (!cmsProject && !staticProject) return <NotFound />;
 
-  const relatedService = services.find((s) => {
+  const rawImage = cmsProject?.image || staticProject?.image;
+  const project = {
+    id: String(cmsProject?.id || staticProject?.id || ''),
+    name: cmsProject?.name || staticProject?.name || '',
+    slug: cmsProject?.slug || staticProject?.slug || '',
+    category: cmsProject?.category_name || cmsProject?.resolved_category || staticProject?.category || 'Building Construction',
+    summary: cmsProject?.summary || staticProject?.summary || '',
+    description: cmsProject?.description || cmsProject?.overview || staticProject?.description || '',
+    scope: cmsProject?.scope || staticProject?.scope || [],
+    specifications: cmsProject?.specifications || [],
+    client: cmsProject?.client || staticProject?.client || '',
+    location: cmsProject?.location || staticProject?.location || '',
+    status: cmsProject?.project_status_display || cmsProject?.project_status || staticProject?.status || 'Completed',
+    year: cmsProject?.completion_date ? cmsProject.completion_date.split('-')[0] : (staticProject?.year || ''),
+    image: mediaUrl(rawImage) || 'https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    gallery: (cmsProject?.gallery || []).map((g) => ({ ...g, image: mediaUrl(g.image) })),
+  };
+
+  const allProjects = (data?.projects && data.projects.length > 0)
+    ? data.projects.map((p) => ({
+        id: String(p.id),
+        name: p.name,
+        slug: p.slug,
+        category: p.category_name || p.resolved_category || 'Building Construction',
+        summary: p.summary || p.overview || '',
+        location: p.location || '',
+        client: p.client || '',
+        status: p.project_status_display || p.project_status || 'Completed',
+        image: mediaUrl(p.image) || 'https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=600&h=400',
+        year: p.completion_date ? p.completion_date.split('-')[0] : '',
+      }))
+    : defaultProjects.map((p) => ({
+        ...p,
+        image: mediaUrl(p.image),
+      }));
+
+  const relatedProjects = allProjects
+    .filter((p) => p.category === project.category && p.slug !== project.slug)
+    .slice(0, 3);
+
+  const servicesList = data?.services && data.services.length > 0 ? data.services : defaultServices;
+  const relatedService = servicesList.find((s) => {
     if (project.category === 'Building Construction') return s.slug === 'building-construction';
-    if (project.category === 'Civil Works') return s.slug === 'civil-infrastructure';
-    if (project.category === 'Water & Sanitation') return s.slug === 'civil-infrastructure';
+    if (project.category === 'Civil Works' || project.category === 'Water & Sanitation') return s.slug === 'civil-infrastructure';
     if (project.category === 'Rehabilitation') return s.slug === 'renovation-maintenance';
     return false;
   });
@@ -35,7 +78,7 @@ export default function ProjectDetail() {
   return (
     <>
       <SEO
-        title={`${project.name} | Jobale Engineering PLC`}
+        title={`${project.name} | ${companyName}`}
         description={project.summary}
         ogImage={project.image}
       />
@@ -87,6 +130,45 @@ export default function ProjectDetail() {
                   ))}
                 </div>
               </div>
+
+              {/* Technical Specifications if present */}
+              {project.specifications && project.specifications.length > 0 && (
+                <div className="mt-12">
+                  <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">Technical Specifications</h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {project.specifications.map((spec, i) => (
+                      <div key={i} className="flex items-start gap-3 p-4 rounded-lg bg-surface-offwhite border border-surface-steel/40">
+                        <CheckCircle2 className="w-5 h-5 text-brand-blue shrink-0 mt-0.5" />
+                        <span className="text-sm text-ink font-medium">{spec}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Project Gallery if present */}
+              {project.gallery && project.gallery.length > 0 && (
+                <div className="mt-12">
+                  <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">Project Gallery</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {project.gallery.map((img) => (
+                      <div key={img.id} className="relative rounded-xl overflow-hidden group shadow-card">
+                        <img
+                          src={img.image}
+                          alt={img.alt_text || img.caption || project.name}
+                          className="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        {img.caption && (
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-navy/90 to-transparent p-3 text-xs text-white">
+                            {img.caption}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Back link */}
               <div className="mt-12">
@@ -149,21 +231,24 @@ export default function ProjectDetail() {
                 </div>
 
                 {/* Related service */}
-                {relatedService && (
-                  <div className="p-6 rounded-xl bg-brand-navy text-white">
-                    <h3 className="text-sm font-heading font-bold uppercase tracking-wider text-white mb-3">
-                      Related Service
-                    </h3>
-                    <p className="text-sm text-surface-steel leading-relaxed mb-4">{relatedService.shortName}</p>
-                    <Link
-                      to={`/services/${relatedService.slug}`}
-                      className="inline-flex items-center gap-2 text-sm font-heading font-semibold text-brand-blue-light hover:gap-3 transition-all"
-                    >
-                      View Service
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                )}
+                {relatedService && (() => {
+                  const sName = ('short_name' in relatedService ? relatedService.short_name : (relatedService as { shortName?: string }).shortName) || relatedService.title;
+                  return (
+                    <div className="p-6 rounded-xl bg-brand-navy text-white">
+                      <h3 className="text-sm font-heading font-bold uppercase tracking-wider text-white mb-3">
+                        Related Service
+                      </h3>
+                      <p className="text-sm text-surface-steel leading-relaxed mb-4">{sName}</p>
+                      <Link
+                        to={`/services/${relatedService.slug}`}
+                        className="inline-flex items-center gap-2 text-sm font-heading font-semibold text-brand-blue-light hover:gap-3 transition-all"
+                      >
+                        View Service
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  );
+                })()}
 
                 {/* CTA */}
                 <div className="p-6 rounded-xl bg-white border border-surface-steel/60">

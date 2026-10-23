@@ -1,15 +1,37 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Building2 } from 'lucide-react';
 import SEO from '@/components/SEO';
 import PageHeader from '@/components/PageHeader';
 import CTASection from '@/components/CTASection';
-import { services } from '@/data/services';
+import { services as defaultServices } from '@/data/services';
+import { useCms } from '@/context/CmsContext';
+import { resolveLucideIcon } from '@/lib/icons';
+import { mediaUrl } from '@/lib/api';
 
 export default function Services() {
+  const { data, companyName } = useCms();
+  const apiServices = data?.services;
+
+  // Use dynamic published services from CMS if available, otherwise default
+  const servicesList = (apiServices && apiServices.length > 0)
+    ? apiServices.map((s) => ({
+        slug: s.slug,
+        title: s.title,
+        shortName: s.short_name || s.title,
+        summary: s.summary,
+        scope: s.scope || [],
+        image: mediaUrl(s.image) || 'https://images.pexels.com/photos/4390530/pexels-photo-4390530.jpeg?auto=compress&cs=tinysrgb&w=600&h=500',
+        icon: resolveLucideIcon(s.icon, Building2),
+      }))
+    : defaultServices.map((s) => ({
+        ...s,
+        image: mediaUrl(s.image) || 'https://images.pexels.com/photos/4390530/pexels-photo-4390530.jpeg?auto=compress&cs=tinysrgb&w=600&h=500',
+      }));
+
   return (
     <>
       <SEO
-        title="Services | Jobale Engineering PLC"
+        title={`Services | ${companyName}`}
         description="Building construction, civil infrastructure, finishing and fit-out, building services (MEP), and renovation and maintenance services from Jobale Engineering PLC."
         ogImage="https://images.pexels.com/photos/4390530/pexels-photo-4390530.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"
       />
@@ -25,7 +47,7 @@ export default function Services() {
       <section className="py-20 lg:py-28 bg-white">
         <div className="container-page">
           <div className="space-y-16">
-            {services.map((service, i) => {
+            {servicesList.map((service, i) => {
               const Icon = service.icon;
               const isReversed = i % 2 === 1;
               return (
@@ -39,6 +61,9 @@ export default function Services() {
                       alt={service.title}
                       className="w-full h-72 lg:h-80 object-cover rounded-2xl shadow-card"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://images.pexels.com/photos/4390530/pexels-photo-4390530.jpeg?auto=compress&cs=tinysrgb&w=600&h=500';
+                      }}
                     />
                     <div className="absolute -bottom-5 -left-2 lg:-left-5 w-16 h-16 rounded-xl bg-brand-blue flex items-center justify-center shadow-elevated">
                       <Icon className="w-8 h-8 text-white" />

@@ -27,7 +27,11 @@ interface Commitment {
   points: string[];
 }
 
-const qualityAssurance: Commitment = {
+import { useCms } from '@/context/CmsContext';
+import { resolveLucideIcon } from '@/lib/icons';
+import { mediaUrl } from '@/lib/api';
+
+const defaultQualityAssurance: Commitment = {
   icon: ClipboardCheck,
   title: 'Quality Assurance',
   points: [
@@ -40,7 +44,7 @@ const qualityAssurance: Commitment = {
   ],
 };
 
-const healthSafety: Commitment = {
+const defaultHealthSafety: Commitment = {
   icon: HardHat,
   title: 'Health & Safety',
   points: [
@@ -53,7 +57,7 @@ const healthSafety: Commitment = {
   ],
 };
 
-const environmental: Commitment = {
+const defaultEnvironmental: Commitment = {
   icon: Leaf,
   title: 'Environmental Responsibility',
   points: [
@@ -66,7 +70,7 @@ const environmental: Commitment = {
   ],
 };
 
-const community: Commitment = {
+const defaultCommunity: Commitment = {
   icon: Users,
   title: 'Community Responsibility',
   points: [
@@ -79,22 +83,69 @@ const community: Commitment = {
   ],
 };
 
-const commitments = [qualityAssurance, healthSafety, environmental, community];
+const defaultCommitments = [defaultQualityAssurance, defaultHealthSafety, defaultEnvironmental, defaultCommunity];
 
 export default function QualitySafety() {
+  const { data, companyName } = useCms();
+  const qs = data?.quality_safety;
+  const verifiedStandards = data?.quality_standards || [];
+
+  const commitments: Commitment[] = (qs?.commitments && qs.commitments.length > 0)
+    ? qs.commitments.map((c: any) => {
+        let points: string[] = [];
+        if (Array.isArray(c.points) && c.points.length > 0) {
+          points = c.points;
+        } else if (c.description) {
+          if (c.description.includes('\n')) {
+            points = c.description.split('\n').map((s: string) => s.trim()).filter(Boolean);
+          } else if (c.description.includes(';')) {
+            points = c.description.split(';').map((s: string) => s.trim()).filter(Boolean);
+          }
+        }
+
+        const titleLower = (c.title || '').toLowerCase();
+        if (points.length <= 1) {
+          if (titleLower.includes('quality') && qs?.quality_assurance) {
+            points = qs.quality_assurance.split(/(?<=\.)\s+/).map((s) => s.trim()).filter(Boolean);
+          } else if (titleLower.includes('safety') && qs?.safety_practices) {
+            points = qs.safety_practices.split(/(?<=\.)\s+/).map((s) => s.trim()).filter(Boolean);
+          } else if (titleLower.includes('environment') && qs?.environmental_practices) {
+            points = qs.environmental_practices.split(/(?<=\.)\s+/).map((s) => s.trim()).filter(Boolean);
+          }
+        }
+
+        if (points.length <= 1) {
+          const defaultMatch = defaultCommitments.find(
+            (d) => d.title.toLowerCase().includes(titleLower) || titleLower.includes(d.title.toLowerCase())
+          );
+          if (defaultMatch && defaultMatch.points.length > 0) {
+            points = defaultMatch.points;
+          }
+        }
+
+        return {
+          icon: resolveLucideIcon(c.icon, ShieldCheck),
+          title: c.title,
+          points: points.length > 0 ? points : (c.description ? [c.description] : []),
+        };
+      })
+    : defaultCommitments;
+
+  const heroImg = mediaUrl(qs?.hero_image) || "https://images.pexels.com/photos/38043248/pexels-photo-38043248.jpeg?auto=compress&cs=tinysrgb&w=1920&h=600";
+
   return (
     <>
       <SEO
-        title="Quality, Safety & Sustainability | Jobale Engineering PLC"
-        description="Our commitments to quality assurance, health and safety, environmental responsibility, and community engagement on every construction project."
-        ogImage="https://images.pexels.com/photos/38043248/pexels-photo-38043248.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"
+        title={`Quality, Safety & Sustainability | ${companyName}`}
+        description={qs?.introduction || "Our commitments to quality assurance, health and safety, environmental responsibility, and community engagement on every construction project."}
+        ogImage={heroImg}
       />
 
       <PageHeader
         label="Our Commitments"
-        title="Quality, Safety & Sustainability"
-        description="We treat quality, safety, environmental responsibility, and community engagement as core project commitments — embedded in how we plan, execute, and close out every project."
-        image="https://images.pexels.com/photos/38043248/pexels-photo-38043248.jpeg?auto=compress&cs=tinysrgb&w=1920&h=600"
+        title={qs?.heading || "Quality, Safety & Sustainability"}
+        description={qs?.introduction || "We treat quality, safety, environmental responsibility, and community engagement as core project commitments — embedded in how we plan, execute, and close out every project."}
+        image={heroImg}
         breadcrumbs={[{ label: 'Home', to: '/' }, { label: 'Quality & Safety' }]}
       />
 
@@ -107,12 +158,18 @@ export default function QualitySafety() {
               Building Right, Building Safe, Building Responsibly
             </h2>
             <div className="space-y-4 text-ink leading-relaxed">
-              <p>
-                Quality, safety, and sustainability are not add-ons to our construction process — they are part of how we work on every project. From the first site assessment to final handover, we follow systematic commitments designed to protect our clients, our workers, the public, and the environment.
-              </p>
-              <p>
-                The policies below describe how our team approaches quality, safety, environmental responsibility, and community engagement on every project.
-              </p>
+              {qs?.quality_assurance ? (
+                <p className="whitespace-pre-line">{qs.quality_assurance}</p>
+              ) : (
+                <>
+                  <p>
+                    Quality, safety, and sustainability are not add-ons to our construction process — they are part of how we work on every project. From the first site assessment to final handover, we follow systematic commitments designed to protect our clients, our workers, the public, and the environment.
+                  </p>
+                  <p>
+                    The policies below describe how our team approaches quality, safety, environmental responsibility, and community engagement on every project.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -189,6 +246,46 @@ export default function QualitySafety() {
           </div>
         </div>
       </section>
+
+      {/* Verified Certifications & Credentials if verified by owner */}
+      {verifiedStandards.length > 0 && (
+        <section className="py-20 bg-surface-offwhite">
+          <div className="container-page">
+            <div className="max-w-2xl mb-12">
+              <p className="section-label mb-4">Credentials & Standards</p>
+              <h2 className="text-3xl font-heading font-extrabold text-brand-navy">
+                Verified Standards & Certifications
+              </h2>
+              <p className="mt-3 text-ink">
+                Official certifications, quality accreditations, and regulatory compliance standards verified by Jobale Engineering PLC.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {verifiedStandards.map((std) => (
+                <div key={std.id} className="p-6 rounded-xl bg-white border border-surface-steel/50 shadow-card">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-brand-blue/10 flex items-center justify-center">
+                      <ShieldCheck className="w-5 h-5 text-brand-blue" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-heading font-bold text-brand-navy">{std.name}</h3>
+                      <p className="text-xs text-ink-muted">{std.issuing_body}</p>
+                    </div>
+                  </div>
+                  {std.certificate_number && (
+                    <p className="text-xs text-ink-light mb-2">
+                      <span className="font-semibold text-brand-navy">Cert No:</span> {std.certificate_number}
+                    </p>
+                  )}
+                  {std.description && (
+                    <p className="text-sm text-ink leading-relaxed line-clamp-3">{std.description}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Policy statement */}
       <section className="py-20 lg:py-24 bg-white">

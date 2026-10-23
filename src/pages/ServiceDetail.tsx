@@ -12,31 +12,78 @@ import SEO from '@/components/SEO';
 import PageHeader from '@/components/PageHeader';
 import CTASection from '@/components/CTASection';
 import { getServiceBySlug, services } from '@/data/services';
-import { projects } from '@/data/projects';
+import { projects as defaultProjects } from '@/data/projects';
+import { useCms } from '@/context/CmsContext';
+import { resolveLucideIcon } from '@/lib/icons';
+import { mediaUrl } from '@/lib/api';
 import NotFound from './NotFound';
 
 export default function ServiceDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const service = slug ? getServiceBySlug(slug) : undefined;
+  const { data, companyName } = useCms();
 
-  if (!service) return <NotFound />;
+  // Find from dynamic CMS services or static services
+  const cmsService = data?.services?.find((s) => s.slug === slug);
+  const staticService = slug ? getServiceBySlug(slug) : undefined;
+
+  if (!cmsService && !staticService) return <NotFound />;
+
+  const rawImage = cmsService?.image || staticService?.image;
+  const service = {
+    slug: cmsService?.slug || staticService?.slug || '',
+    title: cmsService?.title || staticService?.title || '',
+    shortName: cmsService?.short_name || staticService?.shortName || staticService?.title || '',
+    summary: cmsService?.summary || staticService?.summary || '',
+    overview: cmsService?.overview || staticService?.overview || '',
+    scope: cmsService?.scope || staticService?.scope || [],
+    applications: cmsService?.applications || staticService?.applications || [],
+    approach: cmsService?.approach || staticService?.approach || '',
+    qualitySafety: cmsService?.quality_safety || staticService?.qualitySafety || '',
+    image: mediaUrl(rawImage) || 'https://images.pexels.com/photos/4390530/pexels-photo-4390530.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+    icon: resolveLucideIcon(cmsService?.icon, staticService?.icon || Building),
+  };
 
   const Icon = service.icon;
-  const relatedProjects = projects
+
+  const allProjects = (data?.projects && data.projects.length > 0)
+    ? data.projects.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        category: p.category_name || p.resolved_category || 'Building Construction',
+        image: mediaUrl(p.image) || 'https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=600&h=400',
+      }))
+    : defaultProjects.map((p) => ({
+        ...p,
+        image: mediaUrl(p.image),
+      }));
+
+  const relatedProjects = allProjects
     .filter((p) => {
       if (service.slug === 'building-construction') return p.category === 'Building Construction';
-      if (service.slug === 'civil-infrastructure') return p.category === 'Civil Works';
+      if (service.slug === 'civil-infrastructure') return p.category === 'Civil Works' || p.category === 'Water & Sanitation';
       if (service.slug === 'renovation-maintenance') return p.category === 'Rehabilitation';
       return false;
     })
     .slice(0, 3);
 
-  const otherServices = services.filter((s) => s.slug !== service.slug).slice(0, 4);
+  const otherServices = (data?.services && data.services.length > 0)
+    ? data.services
+        .filter((s) => s.slug !== service.slug)
+        .slice(0, 4)
+        .map((s) => ({
+          slug: s.slug,
+          shortName: s.short_name || s.title,
+          icon: resolveLucideIcon(s.icon, Building),
+        }))
+    : services
+        .filter((s) => s.slug !== service.slug)
+        .slice(0, 4);
 
   return (
     <>
       <SEO
-        title={`${service.title} | Jobale Engineering PLC`}
+        title={`${service.title} | ${companyName}`}
         description={service.summary}
         ogImage={service.image}
       />

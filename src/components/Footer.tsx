@@ -2,10 +2,31 @@ import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Globe, RotateCcw } from 'lucide-react';
 import Logo from './Logo';
 import { company } from '@/data/company';
-import { services } from '@/data/services';
+import { services as defaultServices } from '@/data/services';
+import { useCms } from '@/context/CmsContext';
 
 export default function Footer() {
+  const { data, slogan, companyName, phone, email, city, region, country } = useCms();
   const year = new Date().getFullYear();
+
+  const servicesList =
+    data?.services && data.services.length > 0
+      ? data.services.map((s) => ({
+          slug: s.slug,
+          shortName: s.short_name || s.title,
+        }))
+      : defaultServices;
+
+  const copyrightText =
+    data?.site_settings?.footer_copyright ||
+    data?.footer?.copyright_text ||
+    `© ${year} ${company.legalName}. All rights reserved.`;
+
+  const footerDescription =
+    data?.footer?.description ||
+    `General construction and civil engineering company based in ${city}, ${region}, ${country}.`;
+
+  const footerLogo = data?.footer?.logo || data?.site_settings?.logo || null;
 
   return (
     <footer className="bg-brand-navy-dark text-surface-steel">
@@ -13,12 +34,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Logo className="h-14 w-[180px] rounded bg-white mb-4" theme="dark" />
+            <Logo src={footerLogo} className="h-14 w-[180px] rounded bg-white mb-4" theme="dark" />
             <p className="text-sm leading-relaxed text-surface-steel/80 max-w-xs">
-              {company.slogan}
+              {slogan}
             </p>
             <p className="mt-4 text-sm text-surface-steel/70 max-w-xs">
-              General construction and civil engineering company based in {company.city}, {company.region}, {company.country}.
+              {footerDescription}
             </p>
           </div>
 
@@ -55,7 +76,7 @@ export default function Footer() {
               Services
             </h3>
             <ul className="space-y-3">
-              {services.map((service) => (
+              {servicesList.slice(0, 6).map((service) => (
                 <li key={service.slug}>
                   <Link
                     to={`/services/${service.slug}`}
@@ -76,25 +97,25 @@ export default function Footer() {
             <ul className="space-y-4">
               <li>
                 <a
-                  href={`tel:${company.phone.replace(/\s/g, '')}`}
+                  href={`tel:${phone.replace(/\s/g, '')}`}
                   className="flex items-start gap-3 text-sm text-surface-steel/80 hover:text-white transition-colors group"
                 >
                   <Phone className="w-4 h-4 mt-0.5 text-brand-blue-light shrink-0" />
-                  <span>{company.phone}</span>
+                  <span>{phone}</span>
                 </a>
               </li>
               <li>
                 <a
-                  href={`mailto:${company.email}`}
+                  href={`mailto:${email}`}
                   className="flex items-start gap-3 text-sm text-surface-steel/80 hover:text-white transition-colors"
                 >
                   <Mail className="w-4 h-4 mt-0.5 text-brand-blue-light shrink-0" />
-                  <span>{company.email}</span>
+                  <span>{email}</span>
                 </a>
               </li>
               <li className="flex items-start gap-3 text-sm text-surface-steel/80">
                 <MapPin className="w-4 h-4 mt-0.5 text-brand-blue-light shrink-0" />
-                <span>{company.city}, {company.region}, {company.country}</span>
+                <span>{city}, {region}, {country}</span>
               </li>
               {company.website && (
                 <li className="flex items-start gap-3 text-sm text-surface-steel/80">
@@ -108,7 +129,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-surface-steel/60 text-center sm:text-left">
-            &copy; {year} {company.legalName}. All rights reserved.
+            {copyrightText}
           </p>
           <div className="flex items-center gap-6">
             <button

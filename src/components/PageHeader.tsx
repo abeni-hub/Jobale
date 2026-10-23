@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { mediaUrl } from '@/lib/api';
 
 interface BreadcrumbItem {
   label: string;
@@ -20,13 +21,15 @@ export default function PageHeader({
   image,
   breadcrumbs,
 }: PageHeaderProps) {
+  const resolvedImage = mediaUrl(image);
+
   return (
     <section className="relative overflow-hidden bg-brand-navy">
-      {image && (
+      {resolvedImage && (
         <>
           <div className="absolute inset-0">
             <img
-              src={image}
+              src={resolvedImage}
               alt=""
               className="h-full w-full object-cover opacity-30"
               loading="eager"
@@ -35,7 +38,7 @@ export default function PageHeader({
           <div className="absolute inset-0 bg-gradient-to-br from-brand-navy/90 via-brand-navy/75 to-brand-navy/95" />
         </>
       )}
-      {!image && (
+      {!resolvedImage && (
         <>
           <div className="absolute inset-0 bg-gradient-to-br from-brand-navy via-brand-navy to-brand-navy-dark" />
           <div className="absolute inset-0 bg-grid opacity-30" />

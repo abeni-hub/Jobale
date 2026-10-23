@@ -141,7 +141,7 @@ class AboutBlockSerializer(MediaAssetLinkMixin, serializers.ModelSerializer):
 
 class AboutContentSerializer(MediaAssetLinkMixin, serializers.ModelSerializer):
     media_fields = ('main_image', 'secondary_image')
-    core_values = string_list_field(required=False)
+    core_values = serializers.ListField(child=serializers.DictField(), required=False, allow_empty=True)
     stats = serializers.ListField(child=serializers.DictField(), required=False, allow_empty=True)
 
     class Meta:
@@ -159,7 +159,7 @@ class AboutContentSerializer(MediaAssetLinkMixin, serializers.ModelSerializer):
 # Quality & safety
 # ---------------------------------------------------------------------------
 class QualityStandardSerializer(MediaAssetLinkMixin, serializers.ModelSerializer):
-    media_fields = ('image',)
+    media_fields = ('image', 'document')
 
     class Meta:
         model = QualityStandard

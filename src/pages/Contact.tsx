@@ -12,8 +12,9 @@ import {
 import SEO from '@/components/SEO';
 import PageHeader from '@/components/PageHeader';
 import { company } from '@/data/company';
-import { services } from '@/data/services';
-import { supabase } from '@/lib/supabase';
+import { services as defaultServices } from '@/data/services';
+import { api } from '@/lib/api';
+import { useCms } from '@/context/CmsContext';
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -51,9 +52,16 @@ const initialFormData: FormData = {
 };
 
 export default function Contact() {
+  const { data, companyName, phone, email, address, city, region, country } = useCms();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [formState, setFormState] = useState<FormState>('idle');
+  const [inquiryReference, setInquiryReference] = useState<string>('');
+  const [submitError, setSubmitError] = useState<string>('');
+
+  const servicesList = (data?.services && data.services.length > 0)
+    ? data.services
+    : defaultServices;
 
   function validate(): FormErrors {
     const e: FormErrors = {};
@@ -93,25 +101,30 @@ export default function Contact() {
     }
 
     setFormState('submitting');
+    setSubmitError('');
+
     try {
-      const { error } = await supabase.from('inquiries').insert({
+      const response = await api.post<{ detail?: string; reference?: string }>('/contact/inquiries/', {
         full_name: formData.full_name.trim(),
-        organization: formData.organization.trim() || null,
+        organization: formData.organization.trim() || undefined,
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         service_required: formData.service_required,
-        project_location: formData.project_location.trim() || null,
-        estimated_budget: formData.estimated_budget.trim() || null,
+        project_location: formData.project_location.trim() || undefined,
+        estimated_budget: formData.estimated_budget.trim() || undefined,
         project_description: formData.project_description.trim(),
         consent: formData.consent,
       });
 
-      if (error) throw error;
-
+      if (response && response.reference) {
+        setInquiryReference(response.reference);
+      }
       setFormState('success');
       setFormData(initialFormData);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Contact form submission error:', err);
+      const msg = (err as Error)?.message || "We couldn't submit your inquiry at this time.";
+      setSubmitError(msg);
       setFormState('error');
     }
   }
@@ -124,14 +137,14 @@ export default function Contact() {
   return (
     <>
       <SEO
-        title="Contact Us | Jobale Engineering PLC"
-        description="Contact Jobale Engineering PLC in Adama, Ethiopia. Call +251 910 256 686 or email civiljob12@gmail.com to discuss your construction or civil engineering project."
+        title={`Contact Us | ${companyName}`}
+        description={`Contact ${companyName} in ${city}, ${country}. Call ${phone} or email ${email} to discuss your construction or civil engineering project.`}
       />
 
       <PageHeader
-        label="Get in Touch"
-        title="Contact Our Team"
-        description="Have a construction or civil engineering project in mind? Speak with our team about your requirements, site conditions, and timeline."
+        label={data?.contact?.heading ? "Get in Touch" : "Get in Touch"}
+        title={data?.contact?.heading || "Contact Our Team"}
+        description={data?.contact?.description || "Have a construction or civil engineering project in mind? Speak with our team about your requirements, site conditions, and timeline."}
         breadcrumbs={[{ label: 'Home', to: '/' }, { label: 'Contact' }]}
       />
 
@@ -145,12 +158,12 @@ export default function Contact() {
                 Reach Us Directly
               </h2>
               <p className="text-ink leading-relaxed mb-8">
-                We're based in {company.city}, {company.region}, {company.country}. Contact us by phone or email, or submit the inquiry form and we'll get back to you.
+                We're based in {city || company.city}, {region || company.region}, {country || company.country}. Contact us by phone or email, or submit the inquiry form and our engineering team will get back to you promptly.
               </p>
 
               <div className="space-y-5">
                 <a
-                  href={`tel:${company.phone.replace(/\s/g, '')}`}
+                  href={`tel:${(phone || company.phone).replace(/\s/g, '')}`}
                   className="flex items-start gap-4 p-5 rounded-xl bg-surface-offwhite hover:shadow-card transition-all group"
                 >
                   <div className="w-11 h-11 rounded-lg bg-brand-blue flex items-center justify-center shrink-0">
@@ -158,12 +171,12 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs font-heading font-semibold uppercase tracking-wider text-ink-light">Telephone</p>
-                    <p className="text-sm font-medium text-brand-navy group-hover:text-brand-blue transition-colors mt-1">{company.phone}</p>
+                    <p className="text-sm font-medium text-brand-navy group-hover:text-brand-blue transition-colors mt-1">{phone || company.phone}</p>
                   </div>
                 </a>
 
                 <a
-                  href={`mailto:${company.email}`}
+                  href={`mailto:${email || company.email}`}
                   className="flex items-start gap-4 p-5 rounded-xl bg-surface-offwhite hover:shadow-card transition-all group"
                 >
                   <div className="w-11 h-11 rounded-lg bg-brand-blue flex items-center justify-center shrink-0">
@@ -171,7 +184,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs font-heading font-semibold uppercase tracking-wider text-ink-light">Email</p>
-                    <p className="text-sm font-medium text-brand-navy group-hover:text-brand-blue transition-colors mt-1">{company.email}</p>
+                    <p className="text-sm font-medium text-brand-navy group-hover:text-brand-blue transition-colors mt-1">{email || company.email}</p>
                   </div>
                 </a>
 
@@ -181,7 +194,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs font-heading font-semibold uppercase tracking-wider text-ink-light">Location</p>
-                    <p className="text-sm font-medium text-brand-navy mt-1">{company.city}, {company.region}, {company.country}</p>
+                    <p className="text-sm font-medium text-brand-navy mt-1">{address || `${company.city}, ${company.region}, ${company.country}`}</p>
                   </div>
                 </div>
 
@@ -193,17 +206,26 @@ export default function Contact() {
                     <div>
                       <p className="text-xs font-heading font-semibold uppercase tracking-wider text-ink-light">Website</p>
                       <p className="text-sm font-medium text-brand-navy mt-1">{company.website}</p>
-                      <p className="text-xs text-ink-muted mt-1">Domain subject to confirmation</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="mt-8 p-5 rounded-xl bg-brand-navy/5 border border-brand-navy/15">
-                <p className="text-xs text-ink-light leading-relaxed">
-                  Exact office street address and map location to be confirmed. Only the city ({company.city}) is confirmed at present.
-                </p>
-              </div>
+              {/* Map embed if provided */}
+              {data?.contact?.map_embed_url && (
+                <div className="mt-8 rounded-xl overflow-hidden border border-surface-steel/60 h-64">
+                  <iframe
+                    src={data.contact.map_embed_url}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen={false}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Office Location Map"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Form */}
@@ -213,7 +235,7 @@ export default function Contact() {
                   Project Inquiry Form
                 </h2>
                 <p className="text-sm text-ink-light mb-6">
-                  Fill in the form below with your project details. Required fields are marked with an asterisk.
+                  {data?.contact?.form_note || 'Fill in the form below with your project details. Required fields are marked with an asterisk.'}
                 </p>
 
                 {/* Success state */}
@@ -223,11 +245,19 @@ export default function Contact() {
                     <h3 className="text-lg font-heading font-bold text-brand-navy mb-2">
                       Inquiry Submitted Successfully
                     </h3>
+                    {inquiryReference && (
+                      <p className="inline-block px-3 py-1 rounded bg-green-100 text-green-800 text-xs font-mono font-semibold mb-3">
+                        Reference: {inquiryReference}
+                      </p>
+                    )}
                     <p className="text-sm text-ink leading-relaxed">
-                      Thank you for your inquiry. Our team will review your project details and contact you shortly. For urgent matters, please call us directly at {company.phone}.
+                      Thank you for your inquiry. Our engineering team will review your project details and contact you shortly. For urgent matters, please call us directly at {phone || company.phone}.
                     </p>
                     <button
-                      onClick={() => setFormState('idle')}
+                      onClick={() => {
+                        setFormState('idle');
+                        setInquiryReference('');
+                      }}
                       className="mt-6 btn-outline"
                     >
                       Submit Another Inquiry
@@ -243,13 +273,13 @@ export default function Contact() {
                       Submission Failed
                     </h3>
                     <p className="text-sm text-ink leading-relaxed mb-4">
-                      We couldn't submit your inquiry at this time. Please try again, or contact us directly by phone or email.
+                      {submitError || "We couldn't submit your inquiry at this time. Please try again, or contact us directly by phone or email."}
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                       <button onClick={() => setFormState('idle')} className="btn-primary">
                         Try Again
                       </button>
-                      <a href={`mailto:${company.email}`} className="btn-outline">
+                      <a href={`mailto:${email || company.email}`} className="btn-outline">
                         Email Us Instead
                       </a>
                     </div>
@@ -353,7 +383,7 @@ export default function Contact() {
                           aria-describedby={errors.service_required ? 'service-error' : undefined}
                         >
                           <option value="">Select a service...</option>
-                          {services.map((s) => (
+                          {servicesList.map((s) => (
                             <option key={s.slug} value={s.title}>{s.title}</option>
                           ))}
                           <option value="Other">Other / Not sure yet</option>

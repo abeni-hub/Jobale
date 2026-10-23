@@ -15,8 +15,11 @@ import SEO from '@/components/SEO';
 import PageHeader from '@/components/PageHeader';
 import CTASection from '@/components/CTASection';
 import { company } from '@/data/company';
+import { useCms } from '@/context/CmsContext';
+import { resolveLucideIcon } from '@/lib/icons';
+import { mediaUrl } from '@/lib/api';
 
-const coreValues: { icon: LucideIcon; title: string; description: string }[] = [
+const defaultCoreValues: { icon: LucideIcon; title: string; description: string }[] = [
   { icon: ShieldCheck, title: 'Quality', description: 'We deliver construction that meets approved drawings, specifications, and applicable standards — inspected at every stage.' },
   { icon: Award, title: 'Integrity', description: 'We communicate transparently, honour our commitments, and build trust through honest project relationships.' },
   { icon: Clock, title: 'Reliability', description: 'We manage schedules and budgets with discipline, flagging issues early and delivering on our undertakings.' },
@@ -26,19 +29,50 @@ const coreValues: { icon: LucideIcon; title: string; description: string }[] = [
 ];
 
 export default function About() {
+  const { data, companyName, city, region, country } = useCms();
+  const about = data?.about;
+
+  const parsedCoreValues = (about?.core_values && about.core_values.length > 0)
+    ? about.core_values
+        .map((v: any) => {
+          let item = v;
+          if (typeof v === 'string') {
+            try {
+              item = JSON.parse(v);
+            } catch {
+              // Try evaluating python dict string if needed
+              try {
+                const jsonStr = v.replace(/'/g, '"');
+                item = JSON.parse(jsonStr);
+              } catch {
+                item = { title: v, description: '' };
+              }
+            }
+          }
+          return {
+            icon: resolveLucideIcon(item?.icon, ShieldCheck),
+            title: item?.title || '',
+            description: item?.description || '',
+          };
+        })
+        .filter((v) => v.title && v.title.trim().length > 0)
+    : [];
+
+  const coreValues = parsedCoreValues.length > 0 ? parsedCoreValues : defaultCoreValues;
+
   return (
     <>
       <SEO
-        title="About Us | Jobale Engineering PLC"
-        description="Learn about Jobale Engineering PLC — a general construction and civil engineering company based in Adama, Ethiopia. Our history, vision, mission, and core values."
-        ogImage="https://images.pexels.com/photos/8961028/pexels-photo-8961028.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"
+        title={`About Us | ${companyName}`}
+        description={about?.introduction || "Learn about Jobale Engineering PLC — a general construction and civil engineering company based in Adama, Ethiopia. Our history, vision, mission, and core values."}
+        ogImage={about?.main_image || "https://images.pexels.com/photos/8961028/pexels-photo-8961028.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"}
       />
 
       <PageHeader
-        label="About Our Company"
-        title="A Construction Company Built on Engineering Discipline and Trust"
-        description="Jobale Engineering PLC is a general construction and civil engineering company serving institutions, businesses, and communities across Ethiopia."
-        image="https://images.pexels.com/photos/8961028/pexels-photo-8961028.jpeg?auto=compress&cs=tinysrgb&w=1920&h=600"
+        label={about?.eyebrow || "About Our Company"}
+        title={about?.heading || "A Construction Company Built on Engineering Discipline and Trust"}
+        description={about?.introduction || "Jobale Engineering PLC is a general construction and civil engineering company serving institutions, businesses, and communities across Ethiopia."}
+        image={about?.main_image || "https://images.pexels.com/photos/8961028/pexels-photo-8961028.jpeg?auto=compress&cs=tinysrgb&w=1920&h=600"}
         breadcrumbs={[{ label: 'Home', to: '/' }, { label: 'About Us' }]}
       />
 
@@ -52,29 +86,41 @@ export default function About() {
                 Professionally Managed Construction & Engineering
               </h2>
               <div className="mt-6 space-y-4 text-ink leading-relaxed">
-                <p>
-                  Jobale Engineering PLC is a professionally managed general construction company engaged in building construction, civil works, renovation, maintenance, and related engineering services. We are based in {company.city}, {company.region}, {company.country}.
-                </p>
-                <p>
-                  Our company serves government institutions, public procurement departments, NGOs, international organizations, real estate developers, private businesses, consultants, and individual clients. We bring disciplined project management, experienced site supervision, and a systematic approach to quality and safety to every engagement.
-                </p>
-                <p>
-                  We are committed to delivering construction that meets approved drawings and specifications, on schedule and on budget, with workmanship and materials that stand the test of time.
-                </p>
+                {about?.overview ? (
+                  <p className="whitespace-pre-line">{about.overview}</p>
+                ) : (
+                  <>
+                    <p>
+                      {companyName} is a professionally managed general construction company engaged in building construction, civil works, renovation, maintenance, and related engineering services. We are based in {city || company.city}, {region || company.region}, {country || company.country}.
+                    </p>
+                    <p>
+                      Our company serves government institutions, public procurement departments, NGOs, international organizations, real estate developers, private businesses, consultants, and individual clients. We bring disciplined project management, experienced site supervision, and a systematic approach to quality and safety to every engagement.
+                    </p>
+                    <p>
+                      We are committed to delivering construction that meets approved drawings and specifications, on schedule and on budget, with workmanship and materials that stand the test of time.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <img
-                src="https://images.pexels.com/photos/19895874/pexels-photo-19895874.jpeg?auto=compress&cs=tinysrgb&w=600&h=500"
+                src={mediaUrl(about?.main_image) || "https://images.pexels.com/photos/19895874/pexels-photo-19895874.jpeg?auto=compress&cs=tinysrgb&w=600&h=500"}
                 alt="Construction workers in safety gear collaborating on a project"
                 className="w-full h-64 object-cover rounded-xl shadow-card"
                 loading="lazy"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "https://images.pexels.com/photos/19895874/pexels-photo-19895874.jpeg?auto=compress&cs=tinysrgb&w=600&h=500";
+                }}
               />
               <img
-                src="https://images.pexels.com/photos/8961146/pexels-photo-8961146.jpeg?auto=compress&cs=tinysrgb&w=600&h=500"
+                src={mediaUrl(about?.secondary_image) || "https://images.pexels.com/photos/8961146/pexels-photo-8961146.jpeg?auto=compress&cs=tinysrgb&w=600&h=500"}
                 alt="Engineers discussing blueprints at a construction site"
                 className="w-full h-64 object-cover rounded-xl shadow-card mt-8"
                 loading="lazy"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "https://images.pexels.com/photos/8961146/pexels-photo-8961146.jpeg?auto=compress&cs=tinysrgb&w=600&h=500";
+                }}
               />
             </div>
           </div>
@@ -90,12 +136,18 @@ export default function About() {
               Building Experience Across Ethiopia
             </h2>
             <div className="space-y-4 text-ink leading-relaxed">
-              <p>
-                Jobale Engineering PLC has undertaken construction and civil engineering projects across multiple regions of Ethiopia, working on building construction, civil infrastructure, water supply and sanitation, and rehabilitation projects for industrial clients, communities, and public facilities.
-              </p>
-              <p>
-                Our project experience includes works at industrial facilities such as Lemi National Cement and Dangote Cement Factory, community water supply projects in Sekota, Woldia, Negele, Shire, and Asayita, and healthcare facility rehabilitation works — demonstrating our range across sectors and project types.
-              </p>
+              {about?.history ? (
+                <p className="whitespace-pre-line">{about.history}</p>
+              ) : (
+                <>
+                  <p>
+                    {companyName} has undertaken construction and civil engineering projects across multiple regions of Ethiopia, working on building construction, civil infrastructure, water supply and sanitation, and rehabilitation projects for industrial clients, communities, and public facilities.
+                  </p>
+                  <p>
+                    Our project experience includes works at industrial facilities such as Lemi National Cement and Dangote Cement Factory, community water supply projects in Sekota, Woldia, Negele, Shire, and Asayita, and healthcare facility rehabilitation works — demonstrating our range across sectors and project types.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -111,7 +163,7 @@ export default function About() {
                 <Eye className="w-10 h-10 text-brand-blue-light mb-5" />
                 <h3 className="text-xl font-heading font-bold text-white uppercase tracking-wide">Vision</h3>
                 <p className="mt-4 text-lg text-surface-steel leading-relaxed">
-                  To be a trusted and respected construction and engineering company in Ethiopia — recognised for quality workmanship, safe practices, and projects that deliver lasting value to our clients and communities.
+                  {about?.vision || "To be a trusted and respected construction and engineering company in Ethiopia — recognised for quality workmanship, safe practices, and projects that deliver lasting value to our clients and communities."}
                 </p>
               </div>
             </div>
@@ -119,7 +171,7 @@ export default function About() {
               <Target className="w-10 h-10 text-brand-blue mb-5" />
               <h3 className="text-xl font-heading font-bold text-brand-navy uppercase tracking-wide">Mission</h3>
               <p className="mt-4 text-lg text-ink leading-relaxed">
-                To deliver practical engineering and construction solutions that meet client requirements, comply with approved standards, and are executed with discipline, safety, and transparency — building long-term client relationships through reliable performance.
+                {about?.mission || "To deliver practical engineering and construction solutions that meet client requirements, comply with approved standards, and are executed with discipline, safety, and transparency — building long-term client relationships through reliable performance."}
               </p>
             </div>
           </div>
