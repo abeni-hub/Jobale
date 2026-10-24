@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api, mediaUrl, unwrapList } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
 import { useCms } from '@/context/CmsContext';
-import type { ApiProject, ProjectCategory, PublishState } from '@/lib/types';
+import type { ApiProject, ProjectCategory, ProjectGalleryImage, MediaAsset, PublishState } from '@/lib/types';
 import MediaPickerModal from '@/components/admin/MediaPickerModal';
 import ConfirmModal from '@/components/admin/ConfirmModal';
 import {
@@ -22,6 +22,9 @@ import {
   Loader2,
   X,
   Image as ImageIcon,
+  Images,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 
 export default function ProjectsManager() {
@@ -49,6 +52,72 @@ export default function ProjectsManager() {
 
   // Media Picker state
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState<'cover' | 'gallery'>('cover');
+
+  const handleAddGalleryPhoto = (url: string, asset?: MediaAsset) => {
+    setEditingProject((prev) => {
+      if (!prev) return prev;
+      const currentGallery = Array.isArray(prev.gallery) ? [...prev.gallery] : [];
+      const newPhoto: ProjectGalleryImage = {
+        image: url,
+        caption: asset?.title || '',
+        alt_text: asset?.alt_text || '',
+        display_order: currentGallery.length,
+      };
+      return {
+        ...prev,
+        gallery: [...currentGallery, newPhoto],
+      };
+    });
+  };
+
+  const handleUpdateGalleryPhoto = (index: number, updates: Partial<ProjectGalleryImage>) => {
+    setEditingProject((prev) => {
+      if (!prev) return prev;
+      const current = Array.isArray(prev.gallery) ? [...prev.gallery] : [];
+      if (current[index]) {
+        current[index] = { ...current[index], ...updates };
+      }
+      return { ...prev, gallery: current };
+    });
+  };
+
+  const handleRemoveGalleryPhoto = (index: number) => {
+    setEditingProject((prev) => {
+      if (!prev) return prev;
+      const current = Array.isArray(prev.gallery) ? [...prev.gallery] : [];
+      current.splice(index, 1);
+      return { ...prev, gallery: current };
+    });
+  };
+
+  const handleSetGalleryPhotoAsCover = (index: number) => {
+    setEditingProject((prev) => {
+      if (!prev || !prev.gallery) return prev;
+      const photo = prev.gallery[index];
+      if (!photo) return prev;
+      return {
+        ...prev,
+        image: photo.image,
+      };
+    });
+  };
+
+  const handleMoveGalleryPhoto = (index: number, direction: 'up' | 'down') => {
+    setEditingProject((prev) => {
+      if (!prev || !prev.gallery) return prev;
+      const list = [...prev.gallery];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= list.length) return prev;
+      const temp = list[index];
+      list[index] = list[targetIndex];
+      list[targetIndex] = temp;
+      list.forEach((item, idx) => {
+        item.display_order = idx;
+      });
+      return { ...prev, gallery: list };
+    });
+  };
 
   const fetchProjectsAndCategories = useCallback(async () => {
     try {
@@ -622,38 +691,185 @@ export default function ProjectsManager() {
                 </div>
               </div>
 
-              {/* Main Image */}
-              <div>
-                <label className="block text-xs font-semibold text-surface-steel/90 mb-1">
-                  Primary Project Image
-                </label>
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-lg bg-[#07111E] border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                    {editingProject.image ? (
-                      <img
-                        src={mediaUrl(editingProject.image)}
-                        alt="Project thumb"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-[10px] text-surface-steel/40">No image</span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setMediaPickerOpen(true)}
-                    className="px-3.5 py-2 rounded-lg bg-brand-blue/20 hover:bg-brand-blue/30 border border-brand-blue/40 text-brand-blue-light text-xs font-semibold transition-all"
-                  >
-                    Select / Upload Main Image
-                  </button>
-                  {editingProject.image && (
+              {/* Primary Image & Multi-Photo Gallery */}
+              <div className="space-y-4 pt-2">
+                {/* Main Cover Photo */}
+                <div className="p-4 rounded-xl bg-[#07111E]/60 border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-xs font-heading font-bold text-white uppercase tracking-wider">
+                        Primary Cover Image
+                      </label>
+                      <p className="text-[11px] text-surface-steel/60">
+                        The primary image displayed on project cards and search listings.
+                      </p>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setEditingProject((prev) => ({ ...prev, image: null }))}
-                      className="text-xs text-rose-400 hover:text-rose-300"
+                      onClick={() => {
+                        setMediaPickerTarget('cover');
+                        setMediaPickerOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-blue/20 hover:bg-brand-blue/30 border border-brand-blue/40 text-brand-blue-light text-xs font-semibold transition-all"
                     >
-                      Remove
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{editingProject.image ? 'Change Cover' : 'Select Cover'}</span>
                     </button>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 rounded-xl bg-[#07111E] border border-white/15 overflow-hidden shrink-0 flex items-center justify-center relative group shadow-md">
+                      {editingProject.image ? (
+                        <>
+                          <img
+                            src={mediaUrl(editingProject.image)}
+                            alt="Project cover preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-brand-navy/90 text-[9px] font-bold text-brand-blue-light">
+                            COVER
+                          </span>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-2 text-center text-surface-steel/40">
+                          <ImageIcon className="w-6 h-6 mb-1 opacity-50" />
+                          <span className="text-[9px]">No cover</span>
+                        </div>
+                      )}
+                    </div>
+                    {editingProject.image && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingProject((prev) => ({ ...prev, image: null }))}
+                        className="text-xs text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove Cover</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Multiple Gallery Photos Section */}
+                <div className="p-4 rounded-xl bg-[#07111E]/60 border border-white/10 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Images className="w-4 h-4 text-brand-blue-light" />
+                      <div>
+                        <h4 className="text-xs font-heading font-bold text-white uppercase tracking-wider">
+                          Project Photo Gallery ({editingProject.gallery?.length || 0})
+                        </h4>
+                        <p className="text-[11px] text-surface-steel/60">
+                          Add multiple photos (site progress, architectural views, construction milestones). Each photo will be displayed in the client project detail page.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMediaPickerTarget('gallery');
+                        setMediaPickerOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-blue text-white text-xs font-semibold shadow hover:bg-brand-blue-light transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Photo to Gallery</span>
+                    </button>
+                  </div>
+
+                  {/* Gallery Photos Grid */}
+                  {(!editingProject.gallery || editingProject.gallery.length === 0) ? (
+                    <div
+                      onClick={() => {
+                        setMediaPickerTarget('gallery');
+                        setMediaPickerOpen(true);
+                      }}
+                      className="py-8 px-4 text-center border-2 border-dashed border-white/10 rounded-xl hover:border-brand-blue/50 cursor-pointer transition-colors"
+                    >
+                      <Images className="w-8 h-8 mx-auto text-surface-steel/30 mb-2" />
+                      <p className="text-xs font-semibold text-white">No gallery photos added yet</p>
+                      <p className="text-[11px] text-surface-steel/50 mt-1">
+                        Click to add multiple high-resolution photos for this project.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
+                      {editingProject.gallery.map((photo, index) => (
+                        <div
+                          key={photo.id || index}
+                          className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10 relative group"
+                        >
+                          <div className="w-20 h-20 rounded-lg bg-[#07111E] border border-white/10 overflow-hidden shrink-0 relative">
+                            <img
+                              src={mediaUrl(photo.image)}
+                              alt={photo.alt_text || photo.caption || `Gallery #${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="absolute top-1 left-1 px-1 rounded bg-black/70 text-[9px] font-mono text-white">
+                              #{index + 1}
+                            </span>
+                          </div>
+
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <input
+                              type="text"
+                              value={photo.caption || ''}
+                              onChange={(e) =>
+                                handleUpdateGalleryPhoto(index, { caption: e.target.value })
+                              }
+                              placeholder="Photo caption (e.g. South elevation)"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-[#07111E] border border-white/15 text-white text-xs"
+                            />
+
+                            <div className="flex items-center gap-2 text-[11px]">
+                              <button
+                                type="button"
+                                onClick={() => handleSetGalleryPhotoAsCover(index)}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                                  editingProject.image === photo.image
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                    : 'bg-white/5 hover:bg-white/10 text-surface-steel/80'
+                                }`}
+                              >
+                                <Star className="w-3 h-3" />
+                                <span>{editingProject.image === photo.image ? 'Is Cover' : 'Set as Cover'}</span>
+                              </button>
+
+                              {index > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveGalleryPhoto(index, 'up')}
+                                  className="p-1 rounded hover:bg-white/10 text-surface-steel/70 hover:text-white"
+                                  title="Move Up"
+                                >
+                                  <ArrowUp className="w-3 h-3" />
+                                </button>
+                              )}
+                              {index < (editingProject.gallery?.length || 0) - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveGalleryPhoto(index, 'down')}
+                                  className="p-1 rounded hover:bg-white/10 text-surface-steel/70 hover:text-white"
+                                  title="Move Down"
+                                >
+                                  <ArrowDown className="w-3 h-3" />
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveGalleryPhoto(index)}
+                                className="ml-auto text-rose-400 hover:text-rose-300 p-1"
+                                title="Remove photo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
@@ -720,9 +936,15 @@ export default function ProjectsManager() {
       <MediaPickerModal
         isOpen={mediaPickerOpen}
         onClose={() => setMediaPickerOpen(false)}
-        currentValue={editingProject?.image}
-        onSelect={(url) => setEditingProject((prev) => ({ ...prev, image: url }))}
-        title="Select Project Image"
+        currentValue={mediaPickerTarget === 'cover' ? editingProject?.image : null}
+        onSelect={(url, asset) => {
+          if (mediaPickerTarget === 'cover') {
+            setEditingProject((prev) => ({ ...prev, image: url }));
+          } else {
+            handleAddGalleryPhoto(url, asset);
+          }
+        }}
+        title={mediaPickerTarget === 'cover' ? 'Select Project Cover Image' : 'Select Photo for Project Gallery'}
       />
 
       {/* Delete Confirmation Modal */}

@@ -147,12 +147,12 @@ export interface ProjectCategory {
 }
 
 export interface ProjectGalleryImage {
-  id: number;
+  id?: number;
   project?: number;
   image: string;
-  caption: string;
-  alt_text: string;
-  display_order: number;
+  caption?: string;
+  alt_text?: string;
+  display_order?: number;
 }
 
 export interface ApiProject {

@@ -101,7 +101,6 @@ export default function AdminDashboard() {
               to="/admin/hero"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-brand-navy hover:bg-surface-offwhite font-heading font-semibold text-xs tracking-wide shadow-md transition-all active:scale-[0.98]"
             >
-              <Sparkles className="w-4 h-4 text-brand-blue" />
               <span>Edit Homepage</span>
             </Link>
             <a

@@ -21,12 +21,16 @@ class ProjectCategorySerializer(serializers.ModelSerializer):
 
 class ProjectImageSerializer(MediaAssetLinkMixin, serializers.ModelSerializer):
     media_fields = ('image',)
+    id = serializers.IntegerField(required=False)
+    project = serializers.PrimaryKeyRelatedField(
+        queryset=Project.objects.all(), required=False
+    )
 
     class Meta:
         model = ProjectImage
         fields = ('id', 'project', 'image', 'caption', 'alt_text', 'display_order',
                   'created_at', 'updated_at')
-        read_only_fields = ('id', 'project', 'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
 
 
 class ProjectSerializer(MediaAssetLinkMixin, serializers.ModelSerializer):
@@ -35,7 +39,7 @@ class ProjectSerializer(MediaAssetLinkMixin, serializers.ModelSerializer):
     slug = serializers.SlugField(required=False, allow_blank=True, max_length=240)
     scope = string_list_field(required=False)
     specifications = string_list_field(required=False)
-    gallery = ProjectImageSerializer(many=True, read_only=True)
+    gallery = ProjectImageSerializer(many=True, required=False)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     project_status_display = serializers.CharField(source='get_project_status_display',
                                                    read_only=True)
@@ -50,7 +54,67 @@ class ProjectSerializer(MediaAssetLinkMixin, serializers.ModelSerializer):
             'status', 'status_display', 'internal_notes', 'is_verified',
             'created_at', 'updated_at',
         )
-        read_only_fields = ('id', 'gallery', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def _sync_gallery(self, instance, gallery_items):
+        from urllib.parse import urlparse
+
+        keep_ids = set()
+        for order, item in enumerate(gallery_items):
+            item_id = item.get('id')
+            raw_img = item.get('image')
+            if not raw_img:
+                continue
+
+            img_val = raw_img
+            if isinstance(raw_img, str):
+                val = raw_img.strip()
+                if val.startswith(('http://', 'https://')):
+                    val = urlparse(val).path
+                if val.startswith('/media/'):
+                    val = val[len('/media/'):]
+                elif val.startswith('media/'):
+                    val = val[len('media/'):]
+                img_val = val
+
+            caption = item.get('caption', '') or ''
+            alt_text = item.get('alt_text', '') or ''
+            display_order = item.get('display_order', order)
+
+            if item_id and ProjectImage.objects.filter(pk=item_id, project=instance).exists():
+                pi = ProjectImage.objects.get(pk=item_id, project=instance)
+                if img_val:
+                    pi.image = img_val
+                pi.caption = caption
+                pi.alt_text = alt_text
+                pi.display_order = display_order
+                pi.save()
+                keep_ids.add(pi.pk)
+            else:
+                pi = ProjectImage.objects.create(
+                    project=instance,
+                    image=img_val,
+                    caption=caption,
+                    alt_text=alt_text,
+                    display_order=display_order,
+                )
+                keep_ids.add(pi.pk)
+
+        instance.gallery.exclude(pk__in=keep_ids).delete()
+
+    def create(self, validated_data):
+        gallery_items = validated_data.pop('gallery', None)
+        instance = super().create(validated_data)
+        if gallery_items is not None:
+            self._sync_gallery(instance, gallery_items)
+        return instance
+
+    def update(self, instance, validated_data):
+        gallery_items = validated_data.pop('gallery', None)
+        instance = super().update(instance, validated_data)
+        if gallery_items is not None:
+            self._sync_gallery(instance, gallery_items)
+        return instance
 
     def validate_slug(self, value):
         value = (value or '').strip().lower()
