@@ -27,7 +27,7 @@ def _set_auth_cookies(response, refresh, access, remember_me: bool):
     refresh_max_age = refresh.get('exp') - refresh.get('iat')
 
     secure = bool(getattr(settings, 'SESSION_COOKIE_SECURE', False))
-    samesite = 'Lax'
+    samesite = getattr(settings, 'SESSION_COOKIE_SAMESITE', 'None' if secure else 'Lax')
 
     response.set_cookie(
         ACCESS_COOKIE,
@@ -73,8 +73,16 @@ class AdminLoginView(APIView):
         )
         _set_auth_cookies(response, refresh, access, remember_me)
         # Expose a CSRF token cookie for subsequent write requests.
+        csrf_secure = bool(getattr(settings, 'CSRF_COOKIE_SECURE', False))
+        csrf_samesite = getattr(settings, 'CSRF_COOKIE_SAMESITE', 'None' if csrf_secure else 'Lax')
         response['X-CSRFToken'] = get_token(request)
-        response.set_cookie('jobale_csrftoken', get_token(request), samesite='Lax', httponly=False)
+        response.set_cookie(
+            'jobale_csrftoken',
+            get_token(request),
+            samesite=csrf_samesite,
+            secure=csrf_secure,
+            httponly=False,
+        )
         return response
 
 

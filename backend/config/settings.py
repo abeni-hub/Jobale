@@ -19,6 +19,8 @@ load_dotenv(BASE_DIR / '.env')
 
 def env_bool(name: str, default: bool = False) -> bool:
     raw = os.environ.get(name)
+    if raw is None and name.startswith('DJANGO_'):
+        raw = os.environ.get(name[len('DJANGO_'):])
     if raw is None:
         return default
     return raw.strip().lower() in {'1', 'true', 'yes', 'on'}
@@ -26,6 +28,8 @@ def env_bool(name: str, default: bool = False) -> bool:
 
 def env_list(name: str, default=None):
     raw = os.environ.get(name)
+    if not raw and name.startswith('DJANGO_'):
+        raw = os.environ.get(name[len('DJANGO_'):])
     if not raw:
         return list(default or [])
     return [item.strip() for item in raw.split(',') if item.strip()]
@@ -36,19 +40,32 @@ def env_list(name: str, default=None):
 # ---------------------------------------------------------------------------
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
-    'django-insecure-dev-only-key-change-me-in-production',
+    os.environ.get('SECRET_KEY', 'django-insecure-dev-only-key-change-me-in-production'),
 )
 
 DEBUG = env_bool('DJANGO_DEBUG', True)
 
 ALLOWED_HOSTS = env_list(
     'DJANGO_ALLOWED_HOSTS',
-    ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', 'testserver'],
+    [
+        'admin.jobaleengineering.com',
+        'jobaleengineering.com',
+        'www.admin.jobaleengineering.com',
+        'www.jobaleengineering.com',
+        'localhost',
+        '127.0.0.1',
+        '0.0.0.0',
+        '[::1]',
+        'testserver',
+    ],
 )
 
 CSRF_TRUSTED_ORIGINS = env_list(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
     [
+        'https://admin.jobaleengineering.com',
+        'https://jobaleengineering.com',
+        'https://www.jobaleengineering.com',
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:4173',
@@ -163,7 +180,7 @@ SITE_ID = 1
 # ---------------------------------------------------------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').is_dir() else []
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -218,6 +235,9 @@ SPECTACULAR_SETTINGS = {
 CORS_ALLOWED_ORIGINS = env_list(
     'DJANGO_CORS_ALLOWED_ORIGINS',
     [
+        'https://jobaleengineering.com',
+        'https://www.jobaleengineering.com',
+        'https://admin.jobaleengineering.com',
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:4173',
@@ -239,10 +259,10 @@ CORS_ALLOW_HEADERS = [
 CSRF_COOKIE_NAME = 'jobale_csrftoken'
 SESSION_COOKIE_NAME = 'jobale_sessionid'
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = env_bool('DJANGO_SECURE_COOKIES', False)
 CSRF_COOKIE_SECURE = env_bool('DJANGO_SECURE_COOKIES', False)
+SESSION_COOKIE_SAMESITE = 'None' if SESSION_COOKIE_SECURE else 'Lax'
+CSRF_COOKIE_SAMESITE = 'None' if CSRF_COOKIE_SECURE else 'Lax'
 SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', False)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 X_FRAME_OPTIONS = 'DENY'

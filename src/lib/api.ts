@@ -76,13 +76,36 @@ function isFormData(value: unknown): value is FormData {
   return typeof FormData !== 'undefined' && value instanceof FormData;
 }
 
-let inMemoryAccessToken: string | null = null;
+let inMemoryAccessToken: string | null =
+  typeof window !== 'undefined' ? localStorage.getItem('jobale_access_token') : null;
 
 export function setAccessToken(token: string | null): void {
   inMemoryAccessToken = token;
+  if (typeof window !== 'undefined') {
+    if (token) {
+      try {
+        localStorage.setItem('jobale_access_token', token);
+      } catch {
+        // ignore quota / private mode storage errors
+      }
+    } else {
+      try {
+        localStorage.removeItem('jobale_access_token');
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }
 }
 
 export function getAccessToken(): string | null {
+  if (!inMemoryAccessToken && typeof window !== 'undefined') {
+    try {
+      inMemoryAccessToken = localStorage.getItem('jobale_access_token');
+    } catch {
+      inMemoryAccessToken = null;
+    }
+  }
   return inMemoryAccessToken;
 }
 
