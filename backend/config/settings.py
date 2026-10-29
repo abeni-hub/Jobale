@@ -12,9 +12,20 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from backend/.env (if present) without overriding
-# values already exported in the shell / CI environment.
+# Load environment variables from backend/.env or backend/.env.production
 load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env.production')
+
+
+def env_str(name: str, default: str = '') -> str:
+    raw = os.environ.get(name)
+    if (raw is None or raw == '') and name.startswith('DJANGO_'):
+        raw = os.environ.get(name[len('DJANGO_'):])
+    elif (raw is None or raw == '') and not name.startswith('DJANGO_'):
+        raw = os.environ.get(f'DJANGO_{name}')
+    if raw is None or raw == '':
+        return default
+    return raw.strip()
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -275,20 +286,35 @@ ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg']
 ALLOWED_DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt']
 
 # ---------------------------------------------------------------------------
-# Email (contact form notifications)
+# Email (contact form notifications & SMTP dispatch)
 # ---------------------------------------------------------------------------
-EMAIL_BACKEND = os.environ.get(
-    'DJANGO_EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend',
+EMAIL_HOST = env_str('DJANGO_EMAIL_HOST', '')
+EMAIL_PORT = int(env_str('DJANGO_EMAIL_PORT', '587'))
+EMAIL_HOST_USER = env_str('DJANGO_EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = env_str('DJANGO_EMAIL_HOST_PASSWORD', '').replace(' ', '')
+
+# Auto-detect TLS vs SSL based on standard ports if not explicitly specified
+_port_default_ssl = EMAIL_PORT == 465
+_port_default_tls = EMAIL_PORT == 587 or (not _port_default_ssl)
+
+EMAIL_USE_SSL = env_bool('DJANGO_EMAIL_USE_SSL', _port_default_ssl)
+EMAIL_USE_TLS = env_bool('DJANGO_EMAIL_USE_TLS', _port_default_tls if not EMAIL_USE_SSL else False)
+EMAIL_TIMEOUT = int(env_str('DJANGO_EMAIL_TIMEOUT', '15'))
+
+# If an SMTP host is provided, default to the real SMTP backend
+_default_backend = (
+    'django.core.mail.backends.smtp.EmailBackend'
+    if EMAIL_HOST
+    else 'django.core.mail.backends.console.EmailBackend'
 )
-EMAIL_HOST = os.environ.get('DJANGO_EMAIL_HOST', '')
-EMAIL_PORT = int(os.environ.get('DJANGO_EMAIL_PORT', '587'))
-EMAIL_HOST_USER = os.environ.get('DJANGO_EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('DJANGO_EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS = env_bool('DJANGO_EMAIL_USE_TLS', True)
-DEFAULT_FROM_EMAIL = os.environ.get(
-    'DJANGO_DEFAULT_FROM_EMAIL', 'Jobale Engineering Website <no-reply@jobaleengineering.com>'
+EMAIL_BACKEND = env_str('DJANGO_EMAIL_BACKEND', _default_backend)
+
+DEFAULT_FROM_EMAIL = env_str(
+    'DJANGO_DEFAULT_FROM_EMAIL',
+    f'Jobale Engineering Website <{EMAIL_HOST_USER}>' if EMAIL_HOST_USER else 'Jobale Engineering Website <civiljob12@gmail.com>',
 )
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+INQUIRY_RECIPIENT_EMAIL = env_str('DJANGO_INQUIRY_RECIPIENT_EMAIL', 'civiljob12@gmail.com')
 
 # ---------------------------------------------------------------------------
 # Logging
