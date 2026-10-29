@@ -136,9 +136,15 @@ export default function QualitySafety() {
   return (
     <>
       <SEO
-        title={`Quality, Safety & Sustainability | ${companyName}`}
-        description={qs?.introduction || "Our commitments to quality assurance, health and safety, environmental responsibility, and community engagement on every construction project."}
+        title={`Quality, Safety & Environmental Standards | ${companyName}`}
+        description={qs?.introduction || "Our commitments to quality assurance, Ethiopian building code compliance, site safety protocols, and environmental responsibility across all construction and civil engineering projects."}
+        canonical="/quality-safety"
+        keywords="construction quality assurance Ethiopia, site safety standards, Ethiopian building code compliance, occupational health safety construction, Jobale Engineering standards"
         ogImage={heroImg}
+        breadcrumbs={[
+          { name: 'Home', item: '/' },
+          { name: 'Quality & Safety', item: '/quality-safety' },
+        ]}
       />
 
       <PageHeader

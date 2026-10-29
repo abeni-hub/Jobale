@@ -63,9 +63,15 @@ export default function About() {
   return (
     <>
       <SEO
-        title={`About Us | ${companyName}`}
-        description={about?.introduction || "Learn about Jobale Engineering PLC — a general construction and civil engineering company based in Adama, Ethiopia. Our history, vision, mission, and core values."}
+        title={`About Us | ${companyName} — Construction & Engineering Company`}
+        description={about?.introduction || "Learn about Jobale Engineering PLC — a general construction and civil engineering company based in Adama, Ethiopia. Our history, leadership, vision, mission, and core engineering values."}
+        canonical="/about"
+        keywords="Jobale Engineering, Jobale Engineering PLC, about Jobale construction, construction company Ethiopia, civil engineering contractor Adama, general contractor Oromia"
         ogImage={about?.main_image || "https://images.pexels.com/photos/8961028/pexels-photo-8961028.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"}
+        breadcrumbs={[
+          { name: 'Home', item: '/' },
+          { name: 'About Us', item: '/about' },
+        ]}
       />
 
       <PageHeader
@@ -106,7 +112,7 @@ export default function About() {
             <div className="grid grid-cols-2 gap-4">
               <img
                 src={mediaUrl(about?.main_image) || "https://images.pexels.com/photos/19895874/pexels-photo-19895874.jpeg?auto=compress&cs=tinysrgb&w=600&h=500"}
-                alt="Construction workers in safety gear collaborating on a project"
+                alt="Jobale Engineering PLC construction professionals collaborating on project site in safety gear"
                 className="w-full h-64 object-cover rounded-xl shadow-card"
                 loading="lazy"
                 onError={(e) => {
@@ -115,7 +121,7 @@ export default function About() {
               />
               <img
                 src={mediaUrl(about?.secondary_image) || "https://images.pexels.com/photos/8961146/pexels-photo-8961146.jpeg?auto=compress&cs=tinysrgb&w=600&h=500"}
-                alt="Engineers discussing blueprints at a construction site"
+                alt="Jobale Engineering engineers reviewing blueprints and structural drawings at construction site"
                 className="w-full h-64 object-cover rounded-xl shadow-card mt-8"
                 loading="lazy"
                 onError={(e) => {

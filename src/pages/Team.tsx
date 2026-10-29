@@ -10,9 +10,15 @@ export default function Team() {
   return (
     <>
       <SEO
-        title="Our Team | Jobale Engineering PLC"
-        description="Meet the management and personnel behind Jobale Engineering PLC — our general management, project management, engineering, finance, and site operations teams."
+        title="Our Leadership & Engineering Team | Jobale Engineering PLC"
+        description="Meet the management and engineering professionals behind Jobale Engineering PLC — leading building construction, civil engineering, and infrastructure projects across Ethiopia."
+        canonical="/team"
+        keywords="Jobale Engineering leadership, construction project managers Ethiopia, civil engineers Adama, Jobale team"
         ogImage="https://images.pexels.com/photos/30719069/pexels-photo-30719069.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"
+        breadcrumbs={[
+          { name: 'Home', item: '/' },
+          { name: 'Our Team', item: '/team' },
+        ]}
       />
 
       <PageHeader

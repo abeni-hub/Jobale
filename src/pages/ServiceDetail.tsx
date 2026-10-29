@@ -1,12 +1,11 @@
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowRight,
-  ArrowLeft,
   CheckCircle2,
   ShieldCheck,
-  HardHat,
   Building,
-  Wrench,
+  Info,
+  CheckCircle,
 } from 'lucide-react';
 import SEO from '@/components/SEO';
 import PageHeader from '@/components/PageHeader';
@@ -16,6 +15,7 @@ import { projects as defaultProjects } from '@/data/projects';
 import { useCms } from '@/context/CmsContext';
 import { resolveLucideIcon } from '@/lib/icons';
 import { mediaUrl } from '@/lib/api';
+import { getServiceSchema } from '@/lib/seoData';
 import NotFound from './NotFound';
 
 export default function ServiceDetail() {
@@ -39,6 +39,16 @@ export default function ServiceDetail() {
     applications: cmsService?.applications || staticService?.applications || [],
     approach: cmsService?.approach || staticService?.approach || '',
     qualitySafety: cmsService?.quality_safety || staticService?.qualitySafety || '',
+    targetKeywords: staticService?.targetKeywords || [
+      'construction services',
+      'civil engineering',
+      'general contractor',
+      'Ethiopia contractor',
+    ],
+    seoTitle: staticService?.seoTitle,
+    seoDescription: staticService?.seoDescription,
+    verifiedProjectsNote: staticService?.verifiedProjectsNote,
+    verificationNote: staticService?.verificationNote,
     image: mediaUrl(rawImage) || 'https://images.pexels.com/photos/4390530/pexels-photo-4390530.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
     icon: resolveLucideIcon(cmsService?.icon, staticService?.icon || Building),
   };
@@ -60,17 +70,30 @@ export default function ServiceDetail() {
 
   const relatedProjects = allProjects
     .filter((p) => {
-      if (service.slug === 'building-construction') return p.category === 'Building Construction';
-      if (service.slug === 'civil-infrastructure') return p.category === 'Civil Works' || p.category === 'Water & Sanitation';
-      if (service.slug === 'renovation-maintenance') return p.category === 'Rehabilitation';
-      return false;
+      if (service.slug === 'water-works') return p.category === 'Water & Sanitation';
+      if (service.slug === 'civil-engineering' || service.slug === 'civil-infrastructure') {
+        return p.category === 'Civil Works';
+      }
+      if (service.slug === 'building-construction') {
+        return p.category === 'Building Construction';
+      }
+      if (service.slug === 'general-contracting') {
+        return p.category === 'Building Construction' || p.category === 'Civil Works';
+      }
+      if (service.slug === 'steel-structures') {
+        return p.slug.includes('cement') || p.category === 'Building Construction';
+      }
+      if (service.slug === 'renovation-maintenance') {
+        return p.category === 'Rehabilitation';
+      }
+      return p.category === 'Building Construction';
     })
     .slice(0, 3);
 
   const otherServices = (data?.services && data.services.length > 0)
     ? data.services
         .filter((s) => s.slug !== service.slug)
-        .slice(0, 4)
+        .slice(0, 5)
         .map((s) => ({
           slug: s.slug,
           shortName: s.short_name || s.title,
@@ -78,18 +101,38 @@ export default function ServiceDetail() {
         }))
     : services
         .filter((s) => s.slug !== service.slug)
-        .slice(0, 4);
+        .slice(0, 5);
+
+  const serviceSchema = getServiceSchema({
+    title: service.title,
+    slug: service.slug,
+    summary: service.summary,
+    image: service.image,
+    scope: service.scope,
+  });
+
+  const pageTitle = service.seoTitle || `${service.title} | ${companyName}`;
+  const pageDescription = service.seoDescription || service.summary;
+  const canonicalUrl = `/services/${service.slug}`;
 
   return (
     <>
       <SEO
-        title={`${service.title} | ${companyName}`}
-        description={service.summary}
+        title={pageTitle}
+        description={pageDescription}
+        canonical={canonicalUrl}
+        keywords={service.targetKeywords.join(', ')}
         ogImage={service.image}
+        breadcrumbs={[
+          { name: 'Home', item: '/' },
+          { name: 'Services', item: '/services' },
+          { name: service.shortName, item: canonicalUrl },
+        ]}
+        structuredData={serviceSchema}
       />
 
       <PageHeader
-        label="Service"
+        label="Engineering & Construction Service"
         title={service.title}
         description={service.summary}
         image={service.image}
@@ -100,20 +143,46 @@ export default function ServiceDetail() {
         ]}
       />
 
-      {/* Overview */}
+      {/* Main Service Content */}
       <section className="py-20 lg:py-24 bg-white">
         <div className="container-page">
           <div className="grid lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2">
-              <p className="section-label mb-4">Overview</p>
-              <h2 className="text-2xl lg:text-3xl font-heading font-extrabold mb-6 text-balance">
-                {service.title}
+              <p className="section-label mb-4">Service Capabilities</p>
+              <h2 className="text-2xl lg:text-3xl font-heading font-extrabold mb-6 text-balance text-brand-navy">
+                Professional {service.shortName} by Jobale Engineering PLC
               </h2>
               <p className="text-lg text-ink leading-relaxed">{service.overview}</p>
 
+              {/* Verified Project Highlight */}
+              {service.verifiedProjectsNote && (
+                <div className="mt-8 p-5 rounded-xl bg-brand-blue/5 border border-brand-blue/20 flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-brand-blue shrink-0 mt-0.5" />
+                  <div className="text-sm text-ink leading-relaxed">
+                    <strong className="text-brand-navy font-heading font-semibold block mb-0.5">
+                      Verified Field Experience:
+                    </strong>
+                    {service.verifiedProjectsNote}
+                  </div>
+                </div>
+              )}
+
+              {/* Client Confirmation Note (Honesty & Compliance) */}
+              {service.verificationNote && (
+                <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
+                  <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-xs leading-relaxed">
+                    <span className="font-semibold">Note on Project Specifications: </span>
+                    {service.verificationNote}
+                  </div>
+                </div>
+              )}
+
               {/* Scope */}
               <div className="mt-12">
-                <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">Scope of Services</h3>
+                <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">
+                  Scope of Services & Key Deliverables
+                </h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {service.scope.map((item, i) => (
                     <div key={i} className="flex items-start gap-3 p-4 rounded-lg bg-surface-offwhite">
@@ -126,14 +195,16 @@ export default function ServiceDetail() {
 
               {/* Applications */}
               <div className="mt-12">
-                <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">Typical Applications</h3>
+                <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">
+                  Typical Project Applications in Ethiopia
+                </h3>
                 <ul className="space-y-3">
                   {service.applications.map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-ink">
                       <span className="w-6 h-6 rounded-full bg-brand-blue/10 flex items-center justify-center shrink-0 mt-0.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-brand-blue" />
                       </span>
-                      {item}
+                      <span className="text-sm sm:text-base">{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -141,21 +212,25 @@ export default function ServiceDetail() {
 
               {/* Delivery Approach */}
               <div className="mt-12">
-                <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">Delivery Approach</h3>
+                <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">
+                  Engineering Delivery & Execution Process
+                </h3>
                 <div className="p-6 rounded-xl bg-surface-offwhite border border-surface-steel/50">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg bg-brand-blue/10 flex items-center justify-center">
                       <Building className="w-5 h-5 text-brand-blue" />
                     </div>
-                    <span className="font-heading font-bold text-brand-navy">Our Approach</span>
+                    <span className="font-heading font-bold text-brand-navy">Our Technical Approach</span>
                   </div>
-                  <p className="text-ink leading-relaxed">{service.approach}</p>
+                  <p className="text-ink leading-relaxed text-sm sm:text-base">{service.approach}</p>
                 </div>
               </div>
 
               {/* Quality & Safety */}
               <div className="mt-12">
-                <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">Quality & Safety Considerations</h3>
+                <h3 className="text-xl font-heading font-bold text-brand-navy mb-5">
+                  Quality Assurance & Site Safety Standards
+                </h3>
                 <div className="p-6 rounded-xl bg-brand-navy text-white">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
@@ -163,7 +238,7 @@ export default function ServiceDetail() {
                     </div>
                     <span className="font-heading font-bold text-white">Our Commitments</span>
                   </div>
-                  <p className="text-surface-steel leading-relaxed">{service.qualitySafety}</p>
+                  <p className="text-surface-steel leading-relaxed text-sm sm:text-base">{service.qualitySafety}</p>
                 </div>
               </div>
             </div>
@@ -171,16 +246,27 @@ export default function ServiceDetail() {
             {/* Sidebar */}
             <aside className="lg:col-span-1 space-y-6">
               <div className="sticky top-28 space-y-6">
-                {/* Quick facts */}
+                {/* Inquiry card */}
                 <div className="p-6 rounded-xl bg-surface-offwhite border border-surface-steel/60">
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-11 h-11 rounded-lg bg-brand-blue flex items-center justify-center">
                       <Icon className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-heading font-bold text-brand-navy">{service.shortName}</h3>
+                    <div>
+                      <h3 className="font-heading font-bold text-brand-navy text-sm uppercase tracking-wider">
+                        {service.shortName}
+                      </h3>
+                      <p className="text-xs text-ink-muted">Inquire for tenders & quotations</p>
+                    </div>
                   </div>
-                  <Link to="/contact" className="btn-primary w-full">
-                    Discuss This Service
+                  <p className="text-xs text-ink-muted mb-4 leading-relaxed">
+                    Partner with Jobale Engineering PLC for your {service.shortName.toLowerCase()} requirements in Ethiopia.
+                  </p>
+                  <Link
+                    to="/contact"
+                    className="btn-primary w-full text-center flex items-center justify-center gap-2"
+                  >
+                    Request a Quotation
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
@@ -188,7 +274,7 @@ export default function ServiceDetail() {
                 {/* Other services */}
                 <div className="p-6 rounded-xl bg-white border border-surface-steel/60">
                   <h3 className="text-sm font-heading font-bold uppercase tracking-wider text-brand-navy mb-4">
-                    Other Services
+                    All Engineering Services
                   </h3>
                   <ul className="space-y-3">
                     {otherServices.map((s) => {
@@ -208,6 +294,14 @@ export default function ServiceDetail() {
                       );
                     })}
                   </ul>
+                  <div className="mt-4 pt-4 border-t border-surface-steel/40">
+                    <Link
+                      to="/services"
+                      className="text-xs font-heading font-semibold text-brand-blue hover:underline inline-flex items-center gap-1"
+                    >
+                      View all services <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </aside>
@@ -221,8 +315,10 @@ export default function ServiceDetail() {
           <div className="container-page">
             <div className="flex items-end justify-between mb-10">
               <div>
-                <p className="section-label mb-3">Related Work</p>
-                <h2 className="text-2xl lg:text-3xl font-heading font-extrabold">Related Projects</h2>
+                <p className="section-label mb-3">Portfolio Evidence</p>
+                <h2 className="text-2xl lg:text-3xl font-heading font-extrabold text-brand-navy">
+                  Related Projects for {service.shortName}
+                </h2>
               </div>
               <Link
                 to="/projects"
@@ -242,7 +338,7 @@ export default function ServiceDetail() {
                   <div className="relative h-48 overflow-hidden">
                     <img
                       src={project.image}
-                      alt={project.name}
+                      alt={`Jobale Engineering ${service.shortName} project: ${project.name}`}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
                     />
@@ -255,7 +351,7 @@ export default function ServiceDetail() {
                       {project.name}
                     </h3>
                     <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-heading font-semibold text-brand-blue">
-                      View Project
+                      View Project Details
                       <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                     </span>
                   </div>
@@ -267,10 +363,10 @@ export default function ServiceDetail() {
       )}
 
       <CTASection
-        title={`Ready to Start Your ${service.shortName} Project?`}
-        description="Speak with our team about your requirements, site conditions, and project timeline."
+        title={`Plan Your ${service.shortName} Project with Jobale Engineering`}
+        description="Speak with our technical engineering team in Adama, Ethiopia about requirements, site evaluations, and commercial proposals."
         primaryCTA={{ label: 'Discuss Your Project', to: '/contact' }}
-        secondaryCTA={{ label: 'Back to Services', to: '/services' }}
+        secondaryCTA={{ label: 'Explore All Services', to: '/services' }}
       />
     </>
   );

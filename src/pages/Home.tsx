@@ -32,6 +32,7 @@ import { projects as defaultProjects, projectCategories as defaultCategories } f
 import { useCms } from '@/context/CmsContext';
 import { mediaUrl } from '@/lib/api';
 import { renderLucideIcon } from '@/components/admin/IconPicker';
+import { getOrganizationSchema, getWebSiteSchema } from '@/lib/seoData';
 
 const defaultHeroImage =
   'https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080';
@@ -236,9 +237,12 @@ export default function Home() {
   return (
     <>
       <SEO
-        title={data?.seo?.page_title || "Jobale Engineering PLC | Construction & Civil Engineering in Adama, Ethiopia"}
-        description={data?.seo?.meta_description || "General construction and civil engineering company in Adama, Ethiopia. Building construction, civil infrastructure, water supply, renovation, and maintenance services."}
+        title={data?.seo?.page_title || "Jobale Engineering PLC | Construction & Civil Engineering"}
+        description={data?.seo?.meta_description || "Discover Jobale Engineering PLC, a construction and engineering company providing construction, civil engineering, steel structure, general contracting, and water works services."}
+        canonical="/"
+        keywords="Jobale Engineering, Jobale Engineering PLC, Jobale Construction, Jobale Engineering construction company, Construction company Ethiopia, Civil engineering, Steel structure, General contractor, Water works, Adama, Oromia, Ethiopia"
         ogImage={data?.seo?.og_image ? mediaUrl(data.seo.og_image) : heroImage}
+        structuredData={[getOrganizationSchema(), getWebSiteSchema()]}
       />
 
       {/* Section A: Hero */}
@@ -246,7 +250,7 @@ export default function Home() {
         <div className="absolute inset-0">
           <img
             src={heroImage}
-            alt="Construction site with tower cranes and buildings under development"
+            alt="Jobale Engineering PLC - Construction site with tower cranes and multi-storey building development"
             className="h-full w-full object-cover"
             loading="eager"
             fetchPriority="high"
@@ -264,6 +268,7 @@ export default function Home() {
               <span>{eyebrow}</span>
             </p>
             <h1 className="text-4xl sm:text-5xl lg:text-display-lg text-white font-heading font-extrabold tracking-tight leading-[1.05] text-balance animate-fade-in-up">
+              <span className="sr-only">Jobale Engineering PLC — Construction &amp; Civil Engineering General Contractor | </span>
               {headline}
               {headlineAccent && (
                 <>
@@ -330,13 +335,13 @@ export default function Home() {
                 <div className="space-y-4">
                   <img
                     src={data?.about?.main_image ? mediaUrl(data.about.main_image) : "https://images.pexels.com/photos/8961028/pexels-photo-8961028.jpeg?auto=compress&cs=tinysrgb&w=600&h=400"}
-                    alt="Engineers in safety gear discussing a construction project"
+                    alt="Jobale Engineering PLC site engineers collaborating on construction site in safety gear"
                     className="w-full h-56 object-cover rounded-xl shadow-card"
                     loading="lazy"
                   />
                   <img
                     src="https://images.pexels.com/photos/8482551/pexels-photo-8482551.jpeg?auto=compress&cs=tinysrgb&w=600&h=400"
-                    alt="Engineer in hard hat reviewing architectural floor plans"
+                    alt="Jobale Engineering civil engineers reviewing architectural blueprints and structural plans"
                     className="w-full h-40 object-cover rounded-xl shadow-card"
                     loading="lazy"
                   />
@@ -344,13 +349,13 @@ export default function Home() {
                 <div className="space-y-4 pt-8">
                   <img
                     src="https://images.pexels.com/photos/36606405/pexels-photo-36606405.jpeg?auto=compress&cs=tinysrgb&w=600&h=400"
-                    alt="Excavator at construction site with foundations and rebar"
+                    alt="Jobale Engineering civil works excavation and earthmoving site with heavy equipment"
                     className="w-full h-40 object-cover rounded-xl shadow-card"
                     loading="lazy"
                   />
                   <img
                     src={data?.about?.secondary_image ? mediaUrl(data.about.secondary_image) : "https://images.pexels.com/photos/1311159/pexels-photo-1311159.jpeg?auto=compress&cs=tinysrgb&w=600&h=400"}
-                    alt="Aerial view of industrial storage yard with steel structures"
+                    alt="Jobale Engineering industrial yard with structural steel frameworks and prefabricated materials"
                     className="w-full h-56 object-cover rounded-xl shadow-card"
                     loading="lazy"
                   />
@@ -403,7 +408,7 @@ export default function Home() {
                 <div className="relative h-48 overflow-hidden">
                   <img
                     src={service.image}
-                    alt={service.title}
+                    alt={`Jobale Engineering PLC - ${service.title}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
@@ -420,7 +425,7 @@ export default function Home() {
                     {service.summary}
                   </p>
                   <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-heading font-semibold text-brand-blue">
-                    Explore Service
+                    Explore {service.title}
                     <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                   </span>
                 </div>

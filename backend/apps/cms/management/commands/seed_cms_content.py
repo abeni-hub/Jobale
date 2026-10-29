@@ -733,21 +733,21 @@ class Command(BaseCommand):
         self.stdout.write('Seeding SEO settings...')
         seo = get_singleton(SEOSettings)
         seo.page_title = (
-            'Jobale Engineering PLC | Construction & Civil Engineering in Adama, Ethiopia'
+            'Jobale Engineering PLC | Construction & Civil Engineering'
         )
         seo.meta_description = (
-            'General construction and civil engineering company in Adama, Ethiopia. Building '
-            'construction, civil infrastructure, water supply, renovation, and maintenance '
-            'services.'
+            'Discover Jobale Engineering PLC, a construction and engineering company providing '
+            'construction, civil engineering, steel structure, general contracting, and water works services.'
         )
-        seo.social_title = 'Jobale Engineering PLC — Building Excellence, Delivering Trust.'
+        seo.social_title = 'Jobale Engineering PLC — Construction & Civil Engineering'
         seo.social_description = (
-            'From building construction to civil infrastructure, Jobale Engineering delivers '
-            'practical engineering solutions grounded in quality, safety, and lasting value.'
+            'Discover Jobale Engineering PLC, a construction and engineering company providing '
+            'construction, civil engineering, steel structure, general contracting, and water works services.'
         )
         seo.keywords = (
-            'construction company Ethiopia, civil engineering Adama, general contractor Oromia, '
-            'water supply construction, building construction Ethiopia'
+            'Jobale Engineering, Jobale Engineering PLC, Jobale Construction, Jobale Engineering '
+            'construction company, Construction, Civil engineering, Steel structure, General contractor, '
+            'Water works, Adama, Oromia, Ethiopia'
         )
         seo.save()
 

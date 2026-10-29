@@ -73,10 +73,10 @@ export default function Footer() {
           {/* Services */}
           <div>
             <h3 className="text-sm font-heading font-bold uppercase tracking-wider text-white mb-5">
-              Services
+              Engineering Services
             </h3>
             <ul className="space-y-3">
-              {servicesList.slice(0, 6).map((service) => (
+              {servicesList.slice(0, 8).map((service) => (
                 <li key={service.slug}>
                   <Link
                     to={`/services/${service.slug}`}

@@ -12,7 +12,7 @@ export default function Services() {
   const { data, companyName } = useCms();
   const apiServices = data?.services;
 
-  // Use dynamic published services from CMS if available, otherwise default
+  // Use dynamic published services from CMS if available, otherwise fallback to comprehensive defaultServices
   const servicesList = (apiServices && apiServices.length > 0)
     ? apiServices.map((s) => ({
         slug: s.slug,
@@ -31,21 +31,37 @@ export default function Services() {
   return (
     <>
       <SEO
-        title={`Services | ${companyName}`}
-        description="Building construction, civil infrastructure, finishing and fit-out, building services (MEP), and renovation and maintenance services from Jobale Engineering PLC."
+        title={`Construction & Engineering Services | ${companyName}`}
+        description="Explore comprehensive engineering services from Jobale Engineering PLC: general contracting, civil engineering, building construction, steel structure, and water works across Ethiopia."
+        canonical="/services"
+        keywords="construction services, civil engineering services, general contractor services, steel structure engineering, water works construction Ethiopia, Jobale Engineering services"
         ogImage="https://images.pexels.com/photos/4390530/pexels-photo-4390530.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"
+        breadcrumbs={[
+          { name: 'Home', item: '/' },
+          { name: 'Services', item: '/services' },
+        ]}
       />
 
       <PageHeader
-        label="Our Services"
+        label="Engineering Solutions"
         title="Construction & Engineering Services"
-        description="From building construction to civil infrastructure, finishing, MEP, and renovation — we deliver integrated construction services with experienced supervision and systematic quality control."
+        description="From building construction and heavy civil works to steel structures, turnkey general contracting, and water infrastructure — Jobale Engineering PLC provides disciplined supervision and quality engineering throughout Ethiopia."
         image="https://images.pexels.com/photos/4390530/pexels-photo-4390530.jpeg?auto=compress&cs=tinysrgb&w=1920&h=600"
         breadcrumbs={[{ label: 'Home', to: '/' }, { label: 'Services' }]}
       />
 
       <section className="py-20 lg:py-28 bg-white">
         <div className="container-page">
+          <div className="max-w-3xl mb-16">
+            <p className="section-label mb-3">Our Core Capabilities</p>
+            <h2 className="text-3xl lg:text-4xl font-heading font-extrabold text-brand-navy">
+              Delivering Engineering Excellence Across Core Disciplines
+            </h2>
+            <p className="mt-4 text-ink leading-relaxed">
+              We provide integrated, specification-compliant engineering services for institutional, commercial, industrial, and community clients. Explore each specialized service division below:
+            </p>
+          </div>
+
           <div className="space-y-16">
             {servicesList.map((service, i) => {
               const Icon = service.icon;
@@ -58,7 +74,7 @@ export default function Services() {
                   <div className="relative">
                     <img
                       src={service.image}
-                      alt={service.title}
+                      alt={`Jobale Engineering PLC - ${service.title}`}
                       className="w-full h-72 lg:h-80 object-cover rounded-2xl shadow-card"
                       loading="lazy"
                       onError={(e) => {
@@ -71,17 +87,17 @@ export default function Services() {
                   </div>
                   <div>
                     <span className="text-xs font-heading font-bold uppercase tracking-widest text-brand-blue">
-                      Service {String(i + 1).padStart(2, '0')}
+                      Capability {String(i + 1).padStart(2, '0')}
                     </span>
                     <h2 className="mt-2 text-2xl lg:text-3xl font-heading font-extrabold text-brand-navy">
                       {service.title}
                     </h2>
                     <p className="mt-4 text-ink leading-relaxed">{service.summary}</p>
                     <ul className="mt-5 grid sm:grid-cols-2 gap-2">
-                      {service.scope.map((item, j) => (
+                      {service.scope.slice(0, 4).map((item, j) => (
                         <li key={j} className="flex items-start gap-2 text-sm text-ink">
                           <CheckCircle2 className="w-4 h-4 text-brand-blue shrink-0 mt-0.5" />
-                          {item}
+                          <span>{item}</span>
                         </li>
                       ))}
                     </ul>
@@ -89,7 +105,7 @@ export default function Services() {
                       to={`/services/${service.slug}`}
                       className="mt-7 inline-flex items-center gap-2 text-brand-blue font-heading font-semibold hover:gap-3 transition-all"
                     >
-                      Explore {service.shortName}
+                      Explore {service.shortName} Details
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -101,8 +117,8 @@ export default function Services() {
       </section>
 
       <CTASection
-        title="Need a Service Not Listed Here?"
-        description="Tell us about your project requirements. We'll assess whether we can deliver directly or recommend an appropriate approach."
+        title="Need Engineering Support for an Upcoming Project?"
+        description="Connect with Jobale Engineering PLC in Adama, Ethiopia to discuss your technical drawings, bill of quantities (BOQ), and project schedule."
         primaryCTA={{ label: 'Discuss Your Project', to: '/contact' }}
         secondaryCTA={{ label: 'View Our Projects', to: '/projects' }}
       />

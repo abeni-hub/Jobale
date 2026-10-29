@@ -15,6 +15,7 @@ import { company } from '@/data/company';
 import { services as defaultServices } from '@/data/services';
 import { api } from '@/lib/api';
 import { useCms } from '@/context/CmsContext';
+import { getOrganizationSchema } from '@/lib/seoData';
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -137,8 +138,15 @@ export default function Contact() {
   return (
     <>
       <SEO
-        title={`Contact Us | ${companyName}`}
-        description={`Contact ${companyName} in ${city}, ${country}. Call ${phone} or email ${email} to discuss your construction or civil engineering project.`}
+        title={`Contact Jobale Engineering PLC | Construction Contractor Adama, Ethiopia`}
+        description={`Contact Jobale Engineering PLC in Adama, Oromia, Ethiopia. Call ${phone || company.phone} or email ${email || company.email} to discuss construction, civil engineering, steel structures, and water works projects.`}
+        canonical="/contact"
+        keywords="contact Jobale Engineering, Jobale Engineering phone, Jobale Construction Adama, construction company Adama Ethiopia, civil engineering contractor contact, Oromia construction contractor"
+        breadcrumbs={[
+          { name: 'Home', item: '/' },
+          { name: 'Contact Us', item: '/contact' },
+        ]}
+        structuredData={getOrganizationSchema()}
       />
 
       <PageHeader

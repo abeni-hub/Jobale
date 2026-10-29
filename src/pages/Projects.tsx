@@ -82,9 +82,15 @@ export default function Projects() {
   return (
     <>
       <SEO
-        title={`Projects | ${companyName}`}
-        description="Explore our portfolio of construction and civil engineering projects — building construction, civil works, water supply and sanitation, and rehabilitation across Ethiopia."
+        title={`Projects & Construction Portfolio | ${companyName}`}
+        description="View completed and verified engineering projects by Jobale Engineering PLC across Ethiopia: industrial cement factory civil works, hospital water supply systems, community water infrastructure, and building construction."
+        canonical="/projects"
+        keywords="Jobale Engineering projects, construction portfolio Ethiopia, Lemi cement ditch project, Dangote cement canteen, community water supply Ethiopia, civil works portfolio"
         ogImage="https://images.pexels.com/photos/4170185/pexels-photo-4170185.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750"
+        breadcrumbs={[
+          { name: 'Home', item: '/' },
+          { name: 'Projects', item: '/projects' },
+        ]}
       />
 
       <PageHeader
@@ -156,7 +162,7 @@ export default function Projects() {
                   <div className="relative h-56 overflow-hidden">
                     <img
                       src={project.image}
-                      alt={project.name}
+                      alt={`Jobale Engineering PLC Project: ${project.name}`}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
                       onError={(e) => {

@@ -5,7 +5,11 @@ import SEO from '@/components/SEO';
 export default function NotFound() {
   return (
     <>
-      <SEO title="Page Not Found | Jobale Engineering PLC" />
+      <SEO
+        title="Page Not Found | Jobale Engineering PLC"
+        description="The requested page could not be found on Jobale Engineering PLC. Please return to the homepage or contact our team."
+        noindex={true}
+      />
       <section className="min-h-[70vh] flex items-center justify-center bg-surface-offwhite">
         <div className="container-page text-center py-20">
           <p className="text-8xl font-heading font-extrabold text-brand-blue/20">404</p>

@@ -1,3 +1,11 @@
 User-agent: *
 Allow: /
-Sitemap: /sitemap.xml
+Disallow: /admin/
+Disallow: /admin
+
+# Allow Googlebot and search crawlers full access to CSS and JS assets
+Allow: /assets/
+Allow: /images/
+
+# Canonical XML Sitemap
+Sitemap: https://www.jobaleengineering.com/sitemap.xml

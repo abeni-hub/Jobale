@@ -23,6 +23,7 @@ import { getProjectBySlug, getRelatedProjects, projects as defaultProjects } fro
 import { services as defaultServices } from '@/data/services';
 import { useCms } from '@/context/CmsContext';
 import { mediaUrl } from '@/lib/api';
+import { getProjectSchema } from '@/lib/seoData';
 import NotFound from './NotFound';
 
 export default function ProjectDetail() {
@@ -137,18 +138,31 @@ export default function ProjectDetail() {
 
   const servicesList = data?.services && data.services.length > 0 ? data.services : defaultServices;
   const relatedService = servicesList.find((s) => {
+    if (project.category === 'Water & Sanitation') return s.slug === 'water-works';
+    if (project.category === 'Civil Works') return s.slug === 'civil-engineering' || s.slug === 'civil-infrastructure';
     if (project.category === 'Building Construction') return s.slug === 'building-construction';
-    if (project.category === 'Civil Works' || project.category === 'Water & Sanitation') return s.slug === 'civil-infrastructure';
     if (project.category === 'Rehabilitation') return s.slug === 'renovation-maintenance';
     return false;
   });
+
+  const canonicalUrl = `/projects/${project.slug}`;
+  const seoDescription = `${project.summary} Executed by ${companyName}${project.location ? ` in ${project.location}` : ''}.`;
+  const seoKeywords = `${project.name}, Jobale Engineering, Jobale Construction, ${project.category}, ${project.location || 'Ethiopia'}, construction contractor Ethiopia`;
 
   return (
     <>
       <SEO
         title={`${project.name} | ${companyName}`}
-        description={project.summary}
+        description={seoDescription}
+        canonical={canonicalUrl}
+        keywords={seoKeywords}
         ogImage={project.image}
+        breadcrumbs={[
+          { name: 'Home', item: '/' },
+          { name: 'Projects', item: '/projects' },
+          { name: project.name, item: canonicalUrl },
+        ]}
+        structuredData={getProjectSchema(project)}
       />
 
       <PageHeader
@@ -426,7 +440,7 @@ export default function ProjectDetail() {
                         to={`/services/${relatedService.slug}`}
                         className="inline-flex items-center gap-2 text-sm font-heading font-semibold text-brand-blue-light hover:gap-3 transition-all"
                       >
-                        View Service
+                        Explore {sName} Services
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -474,7 +488,7 @@ export default function ProjectDetail() {
                   <div className="relative h-48 overflow-hidden">
                     <img
                       src={p.image}
-                      alt={p.name}
+                      alt={`Jobale Engineering PLC - ${p.name}`}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
                     />
